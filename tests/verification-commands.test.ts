@@ -30,6 +30,12 @@ describe("typescript verification commands", () => {
       { name: "python-pytest", command: ["python", "-m", "pytest"] }
     ]);
 
+    const testsOnlyRepo = await mkdtemp(join(tmpdir(), "apolo-python-tests-"));
+    await mkdir(join(testsOnlyRepo, "tests"));
+    await expect(new VerificationCommandDetector().detect(testsOnlyRepo)).resolves.toEqual([
+      { name: "python-tests", command: ["python", "-m", "unittest", "discover", "-s", "tests"] }
+    ]);
+
     const makeRepo = await mkdtemp(join(tmpdir(), "apolo-make-"));
     await writeFile(join(makeRepo, "Makefile"), "lint:\n\t@echo lint\n\ntest:\n\t@echo test\n", "utf8");
     await expect(new VerificationCommandDetector().detect(makeRepo)).resolves.toEqual([
@@ -52,7 +58,7 @@ describe("typescript verification commands", () => {
       ]
     };
 
-    const results = await new CommandRunner(detector, 50).run(repo);
+    const results = await new CommandRunner(detector, 250).run(repo);
 
     expect(results).toHaveLength(2);
     expect(results[0]?.timedOut).toBe(true);

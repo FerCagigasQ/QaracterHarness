@@ -93,7 +93,7 @@ export class VerificationCommandDetector {
   }
 
   private async detectFallback(repository: string): Promise<readonly DetectedCommand[]> {
-    const hasKnownStack = await exists(join(repository, "package.json")) || await exists(join(repository, "pyproject.toml")) || await exists(join(repository, "requirements.txt")) || await exists(join(repository, "Makefile"));
+    const hasKnownStack = await exists(join(repository, "package.json")) || await exists(join(repository, "pyproject.toml")) || await exists(join(repository, "requirements.txt")) || await exists(join(repository, "Makefile")) || await exists(join(repository, "tests"));
     if (hasKnownStack) {
       return [];
     }
