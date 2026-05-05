@@ -32,6 +32,7 @@ def export_memory(
     query: MemoryQuery | None = None,
     output_format: str = "markdown",
 ) -> MemoryCommandResult:
+    query = query or MemoryQuery(namespace=store.namespace)
     records = tuple(store.list(query))
     if output_format == "markdown":
         return MemoryCommandResult(records, store.export_markdown(query))
