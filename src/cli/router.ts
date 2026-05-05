@@ -3,7 +3,14 @@ import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
 import { createDefaultManifest } from "../config/defaults.js";
 import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
-import { runPlan } from "../planning/cli.js";
+import { detectAgents } from "../agents/detection.js";
+import {
+  RoutingError,
+  parseTaskCapability,
+  routeAgents,
+  type RoutingDecision
+} from "../agents/routing.js";
+import { MAX_AGENTS_PER_TASK, type AgentId, type TaskCapability } from "../agents/catalog.js";
 
 export interface Command {
   readonly name: string;
@@ -51,8 +58,8 @@ export const commands: readonly Command[] = [
   },
   {
     name: "agents",
-    summary: "List configured agent slots.",
-    usage: "apolo agents",
+    summary: "List detected local agent CLIs and route tasks.",
+    usage: "apolo agents [--json] [--route <task>] [--task <kind>] [--require-pr]",
     run: runAgents
   }
 ];
@@ -157,12 +164,138 @@ async function runSync(args: readonly string[], context: CliContext): Promise<Co
   return new SyncCommandService().execute({ args }, context);
 }
 
-async function runMemory(args: readonly string[], context: CliContext): Promise<CommandResult> {
-  return new MemoryCommandService().execute({ args }, context);
+async function runAgents(args: readonly string[], context: CliContext): Promise<number> {
+  const config = await loadConfig(context.cwd, context.env);
+  const options = parseAgentsArgs(args);
+  const agents = await detectAgents({ env: context.env });
+  const routing =
+    options.routePrompt !== undefined
+      ? routeAgents(
+          {
+            prompt: options.routePrompt,
+            task: options.task,
+            requirePr: options.requirePr,
+            maxAgents: MAX_AGENTS_PER_TASK,
+            preferJson: options.json
+          },
+          agents
+        )
+      : null;
+
+  if (options.json) {
+    context.stdout.write(
+      `${JSON.stringify(
+        {
+          maxAgentsPerTask: config.manifest.agents.maxPerTask,
+          configuredAgents: config.manifest.agents.configured.length,
+          agents,
+          routing
+        },
+        null,
+        2
+      )}\n`
+    );
+    return 0;
+  }
+
+  context.stdout.write("APOLO agents\n");
+  context.stdout.write(`max per task: ${config.manifest.agents.maxPerTask}\n`);
+  context.stdout.write(`configured: ${config.manifest.agents.configured.length}\n`);
+  for (const agent of agents) {
+    const status = agent.installed ? "installed" : "missing";
+    const version = agent.version === null ? "" : ` (${agent.version})`;
+    context.stdout.write(`- ${agent.displayName}: ${status}${version}\n`);
+    context.stdout.write(`  id: ${agent.id}\n`);
+    context.stdout.write(`  capabilities: ${agent.capabilities.tasks.join(", ")}\n`);
+    context.stdout.write(`  pr-capable: ${agent.prCapable ? "true" : "false"}\n`);
+    if (!agent.installed && agent.missingReason !== null) {
+      context.stdout.write(`  missing: ${agent.missingReason}\n`);
+    }
+  }
+
+  if (routing !== null) {
+    writeRouting(routing, context);
+  }
+  return 0;
 }
 
-async function runAgents(args: readonly string[], context: CliContext): Promise<CommandResult> {
-  return new AgentsCommandService().execute({ args }, context);
+interface AgentsOptions {
+  readonly json: boolean;
+  readonly routePrompt?: string | undefined;
+  readonly task?: TaskCapability | undefined;
+  readonly requirePr: boolean;
+}
+
+function parseAgentsArgs(args: readonly string[]): AgentsOptions {
+  let json = false;
+  let routePrompt: string | undefined;
+  let task: ReturnType<typeof parseTaskCapability>;
+  let requirePr = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json" || arg === "--format=json" || arg === "--format" || arg === "--route" || arg === "--task") {
+      if (arg === "--json" || arg === "--format=json") {
+        json = true;
+        continue;
+      }
+
+      const value = args[index + 1];
+      if (value === undefined) {
+        throw new ApoloError(`Missing value for ${arg}`, { exitCode: 2 });
+      }
+      index += 1;
+
+      if (arg === "--format") {
+        if (value !== "json" && value !== "text") {
+          throw new ApoloError("apolo agents --format must be text or json", { exitCode: 2 });
+        }
+        json = value === "json";
+      } else if (arg === "--route") {
+        routePrompt = value;
+      } else {
+        try {
+          task = parseTaskCapability(value);
+        } catch (error) {
+          if (error instanceof RoutingError) {
+            throw new ApoloError(error.message, { exitCode: 2 });
+          }
+          throw error;
+        }
+      }
+      continue;
+    }
+
+    if (arg === "--require-pr") {
+      requirePr = true;
+      continue;
+    }
+
+    throw new ApoloError(`Unknown apolo agents option: ${arg}`, {
+      exitCode: 2,
+      hint: "Run `apolo agents --help` for usage."
+    });
+  }
+
+  return { json, routePrompt, task, requirePr };
+}
+
+function writeRouting(routing: RoutingDecision, context: CliContext): void {
+  context.stdout.write("routing\n");
+  context.stdout.write(`task: ${routing.task}\n`);
+  context.stdout.write(`coordinator: ${routing.coordinator ?? "none"}\n`);
+  context.stdout.write(`selected: ${routing.selectedAgents.map((agent) => agent.id).join(", ")}\n`);
+  for (const agent of routing.selectedAgents) {
+    context.stdout.write(`- ${agent.id}: ${agent.command.join(" ")}\n`);
+    if (agent.machineReadableCommand !== null) {
+      context.stdout.write(`  json: ${agent.machineReadableCommand.join(" ")}\n`);
+    }
+  }
+}
+
+async function writeStub(context: CliContext, command: string, capability: string): Promise<number> {
+  context.stdout.write(`apolo ${command}: ${capability} interface ready; implementation pending.\n`);
+  return 0;
 }
 
 async function requestHumanApproval(args: readonly string[], context: CliContext): Promise<boolean> {
