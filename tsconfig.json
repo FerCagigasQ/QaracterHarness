@@ -1,15 +1,25 @@
 {
   "compilerOptions": {
-    "allowJs": true,
-    "checkJs": false,
+    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "noEmit": true,
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "strict": true,
-    "target": "ES2022"
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
   },
   "include": [
-    "packaging/**/*.mjs",
-    "test/**/*.mjs"
+    "src/**/*.ts",
+    "tests/**/*.ts"
   ]
 }

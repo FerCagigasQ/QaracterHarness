@@ -37,11 +37,11 @@ const binStat = statSync(binPath);
 assert(binStat.isFile(), "bin.apolo must point to a file");
 assert(readFileSync(binPath, "utf8").startsWith("#!/usr/bin/env node"), "bin.apolo must have a Node.js shebang");
 
-for (const script of ["typecheck", "package:check", "test", "test:python", "smoke:bin", "ci"]) {
+for (const script of ["lint", "typecheck", "package:check", "test", "test:python", "smoke:bin", "ci", "build"]) {
   assert(packageJson.scripts?.[script], `missing npm script: ${script}`);
 }
 
-for (const entry of ["README.md", "docs", "examples", "packaging/bin"]) {
+for (const entry of ["dist", "package.json"]) {
   assert(packageJson.files?.includes(entry), `package files must include ${entry}`);
 }
 
@@ -51,14 +51,10 @@ const packedPaths = new Set(packInfo.files.map((file) => file.path));
 
 for (const expected of [
   "README.md",
-  "docs/command-reference.md",
-  "docs/usage.md",
-  "docs/architecture.md",
-  "docs/test-strategy.md",
-  "docs/packaging.md",
-  "docs/cross-platform.md",
-  "examples/apolo.config.example.json",
-  "packaging/bin/apolo.mjs",
+  "dist/index.js",
+  "dist/cli/router.js",
+  "dist/config/manifest.js",
+  "dist/fs/layout.js",
   "package.json"
 ]) {
   assert(packedPaths.has(expected), `npm package missing ${expected}`);
