@@ -3,9 +3,10 @@ import { stdin, stdout, stderr } from "node:process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ApoloError } from "./errors.js";
 import { createLogger, logLevelFromArgs, type Writer } from "./logger.js";
 import { dispatch } from "./router.js";
+import { detectOutputFormat, parseGlobalOptions } from "./global-options.js";
+import { writeCommandResult, writeErrorResult } from "./output.js";
 import type { Env } from "../fs/layout.js";
 
 export interface CliRuntime {
@@ -14,41 +15,42 @@ export interface CliRuntime {
   readonly stdout: Writer;
   readonly stderr: Writer;
   readonly isInteractive: boolean;
+  readonly signal: AbortSignal | undefined;
   readonly readLine: (prompt: string) => Promise<string>;
 }
 
 export async function main(args: readonly string[], runtime: Partial<CliRuntime> = {}): Promise<number> {
   const resolvedRuntime = resolveRuntime(runtime);
-  const commandArgs = stripGlobalFlags(args);
-  const logger = createLogger(resolvedRuntime.stderr, logLevelFromArgs(args));
+  const fallbackOutputFormat = detectOutputFormat(args);
 
   try {
+    const { commandArgs, outputFormat } = parseGlobalOptions(args);
+    const logger = createLogger(resolvedRuntime.stderr, outputFormat === "json" ? "silent" : logLevelFromArgs(args));
+
     if (commandArgs[0] === "--version" || commandArgs[0] === "-v") {
-      resolvedRuntime.stdout.write(`${readPackageVersion()}\n`);
+      if (outputFormat === "json") {
+        resolvedRuntime.stdout.write(`${JSON.stringify({ ok: true, command: "version", exitCode: 0, data: { version: readPackageVersion() } })}\n`);
+      } else {
+        resolvedRuntime.stdout.write(`${readPackageVersion()}\n`);
+      }
       return 0;
     }
 
-    return await dispatch(commandArgs, {
+    const result = await dispatch(commandArgs, {
       cwd: resolvedRuntime.cwd,
       env: resolvedRuntime.env,
       isInteractive: resolvedRuntime.isInteractive,
+      outputFormat,
+      signal: resolvedRuntime.signal,
       logger,
       stdout: resolvedRuntime.stdout,
       stderr: resolvedRuntime.stderr,
       readLine: resolvedRuntime.readLine
     });
+    writeCommandResult(result, resolvedRuntime.stdout, outputFormat);
+    return result.exitCode;
   } catch (error) {
-    if (error instanceof ApoloError) {
-      logger.error(error.message);
-      if (error.hint) {
-        resolvedRuntime.stderr.write(`${error.hint}\n`);
-      }
-
-      return error.exitCode;
-    }
-
-    logger.error(error instanceof Error ? error.message : "Unexpected failure.");
-    return 1;
+    return writeErrorResult(error, resolvedRuntime.stderr, fallbackOutputFormat);
   }
 }
 
@@ -59,6 +61,7 @@ function resolveRuntime(runtime: Partial<CliRuntime>): CliRuntime {
     stdout: runtime.stdout ?? stdout,
     stderr: runtime.stderr ?? stderr,
     isInteractive: runtime.isInteractive ?? stdin.isTTY,
+    signal: runtime.signal,
     readLine: runtime.readLine ?? defaultReadLine
   };
 }
@@ -71,10 +74,6 @@ async function defaultReadLine(prompt: string): Promise<string> {
   } finally {
     reader.close();
   }
-}
-
-function stripGlobalFlags(args: readonly string[]): readonly string[] {
-  return args.filter((arg) => arg !== "--verbose" && arg !== "--quiet");
 }
 
 function readPackageVersion(): string {

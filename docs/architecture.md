@@ -48,11 +48,20 @@ APOLO organizes reliable agent work around five subsystems:
 | Scope | Limit work to an approved plan, max 5 agents, explicit write scopes, and bounded diffs. |
 | Session lifecycle | Start from known state, request approval, execute, verify, record memory, and leave clean handoff state. |
 
-## TypeScript and Python boundary
+## TypeScript core runtime and optional Python boundary
 
-The MVP should keep the public CLI surface in TypeScript/Node.js so npm global installation works consistently.
+APOLO 1.0 keeps the public CLI and core runtime in TypeScript/Node.js so npm global installation works consistently without a Python runtime.
 
-Python code can support:
+The TypeScript core owns:
+
+- command service boundaries
+- structured errors and deterministic exit codes
+- text/JSON output contracts
+- timeout and cancellation helpers
+- reusable command result types
+- config and filesystem path resolution
+
+Python code can optionally support:
 
 - integration harnesses
 - model or tool adapters that already exist in Python ecosystems
@@ -61,10 +70,11 @@ Python code can support:
 
 The boundary should remain narrow:
 
-1. TypeScript owns argument parsing, command UX, config loading, and package bin wiring.
+1. TypeScript owns argument parsing, command UX, config loading, package bin wiring, runtime contracts, and command services.
 2. Python helpers should accept explicit JSON input and emit explicit JSON output.
 3. Shared schemas should be versioned and tested with fixtures.
 4. No Python helper should silently mutate the workspace without an approval record from the CLI layer.
+5. Missing Python must never block `apolo doctor`, global npm installation, or TypeScript-owned commands.
 
 ## Approval model
 

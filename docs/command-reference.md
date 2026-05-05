@@ -45,7 +45,9 @@ apolo doctor
 Recommended checks:
 
 - Node.js version supports the package
-- Python is available when Python-backed integrations are enabled
+- npm is available for the primary global install workflow
+- Git is available for repository workflows
+- Python is reported only as an optional runtime when detected
 - Ollama is reachable when local Qwen workflows are enabled
 - workspace config is valid
 - agent count is 5 or fewer

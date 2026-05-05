@@ -1,6 +1,6 @@
 import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { ApoloError } from "../cli/errors.js";
+import { ApoloError } from "../core/errors.js";
 import { CONFIG_FILE_NAME, MANIFEST_FILE_NAME } from "../config/manifest.js";
 
 export interface Env {
@@ -21,6 +21,8 @@ export function resolveHome(env: Env): string {
 
   if (!home) {
     throw new ApoloError("Unable to resolve a home directory.", {
+      code: "CONFIG_INVALID",
+      exitCode: 78,
       hint: "Set HOME or APOLO_HOME before running apolo."
     });
   }

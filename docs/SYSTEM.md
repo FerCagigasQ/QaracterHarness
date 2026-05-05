@@ -105,9 +105,9 @@ Each run follows a lifecycle:
 
 The run ledger records lifecycle events so execution can be audited later.
 
-## TypeScript and Python split
+## TypeScript runtime and optional Python split
 
-APOLO uses TypeScript for the public CLI and Python for several implementation subsystems.
+APOLO uses TypeScript/Node.js for the public CLI and core runtime. Python-backed helpers are optional integration seams, not a requirement for npm-global installation or TypeScript-owned commands.
 
 ### TypeScript owns
 
@@ -118,6 +118,10 @@ APOLO uses TypeScript for the public CLI and Python for several implementation s
 - config loading
 - filesystem layout helpers
 - manifest defaults
+- command service boundaries
+- structured errors and JSON/text output
+- timeout and cancellation helpers
+- reusable command result contracts
 - package validation
 
 Key paths:

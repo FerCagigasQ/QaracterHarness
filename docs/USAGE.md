@@ -12,7 +12,7 @@ Minimum:
 
 Recommended:
 
-- Python 3.11+
+- Python 3.11+ for legacy/fixture harness tests and optional Python-backed integrations
 - Ollama for local Qwen workflows
 - at least one supported coding-agent CLI installed locally
 

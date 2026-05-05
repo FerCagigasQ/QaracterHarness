@@ -18,8 +18,8 @@ The CLI hides most orchestration details behind sensible defaults: Claude as coo
 This repository contains the APOLO-CLI MVP foundation:
 
 - npm package and global `apolo` binary contract
-- TypeScript CLI entrypoint and command router
-- Python subsystems for repository initialization, agent adapters, memory, security gates, run orchestration, verification, and PR metadata
+- TypeScript/Node.js CLI entrypoint, command router, and core runtime foundation
+- Python subsystems for optional integration harnesses and legacy implementation seams
 - local/global memory schema using SQLite
 - generic documentation, examples, packaging checks, and cross-platform CI
 
@@ -46,8 +46,9 @@ node dist/index.js --help
 Requirements:
 
 - Node.js 20+
-- Python 3.11+ for Python-backed subsystems and tests
+- npm for the primary global install workflow
 - Git for repository workflows
+- Optional: Python 3.11+ for legacy/fixture harness tests and optional Python-backed integrations
 - Optional: Ollama with a Qwen model for local analysis
 - Optional: supported agent CLIs installed locally
 
