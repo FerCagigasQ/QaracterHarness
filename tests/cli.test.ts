@@ -117,6 +117,15 @@ describe("apolo cli", () => {
     });
   });
 
+  it("keeps unknown command errors human-readable when --format is absent", async () => {
+    const run = await runCli(["json"]);
+
+    expect(run.code).toBe(2);
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toContain("[apolo] error: Unknown command: json");
+    expect(() => JSON.parse(run.stderr)).toThrow();
+  });
+
   it("returns structured not-implemented errors for workstream-owned commands", async () => {
     const run = await runCli(["plan", "--task", "Add a feature", "--format", "json"]);
 

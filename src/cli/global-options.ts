@@ -52,5 +52,5 @@ export function detectOutputFormat(args: readonly string[]): OutputFormat {
   }
 
   const formatIndex = args.indexOf("--format");
-  return args[formatIndex + 1] === "json" ? "json" : "text";
+  return formatIndex >= 0 && args[formatIndex + 1] === "json" ? "json" : "text";
 }
