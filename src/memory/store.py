@@ -298,12 +298,18 @@ class MemoryStore:
         if not isinstance(metadata, dict):
             return redacted, findings
         for key, value in metadata.items():
-            key_text = redact_text(str(key))
+            raw_key = str(key)
+            key_text = redact_text(raw_key)
             findings += len(key_text.findings)
             if isinstance(value, str):
+                assignment_text = redact_text(f"{raw_key}={value}")
                 value_text = redact_text(value)
-                redacted[key_text.text] = value_text.text
-                findings += len(value_text.findings)
+                if assignment_text.changed:
+                    redacted[key_text.text] = assignment_text.text.split("=", 1)[1]
+                    findings += len(assignment_text.findings)
+                else:
+                    redacted[key_text.text] = value_text.text
+                    findings += len(value_text.findings)
             elif isinstance(value, (int, float, bool)) or value is None:
                 redacted[key_text.text] = value
             else:

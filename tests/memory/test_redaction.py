@@ -29,7 +29,10 @@ class MemoryRedactionTest(unittest.TestCase):
                     title="Credential policy",
                     body="token=dummyplaceholdertoken123 must not be persisted.",
                     tags=("secret=dummyplaceholdertag123",),
-                    metadata={"api_key": "dummyplaceholdermeta123"},
+                    metadata={
+                        "api_key": "dummyplaceholdermeta123",
+                        "note": "plain metadata value",
+                    },
                 )
             )
 
@@ -39,6 +42,7 @@ class MemoryRedactionTest(unittest.TestCase):
             self.assertNotIn("dummyplaceholdertoken123", loaded.body)
             self.assertEqual(("[REDACTED_SECRET]",), loaded.tags)
             self.assertEqual("[REDACTED_SECRET]", loaded.metadata["api_key"])
+            self.assertEqual("plain metadata value", loaded.metadata["note"])
             self.assertEqual(stored.metadata, loaded.metadata)
             self.assertGreaterEqual(loaded.metadata["redaction_count"], 3)
             self.assertIsNotNone(stored.markdown_path)
