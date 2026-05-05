@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import Any
 
-from src.policy.config import PolicyConfig
+from src.policy.config import PolicyConfig, SecretsPolicy
 from src.security.redaction import contains_sensitive_data, find_sensitive_data
 
 
@@ -233,7 +233,7 @@ class SecurityGateEngine:
                 )
             if policy.block_sensitive_data and contains_sensitive_data(
                 memory_write.value,
-                self.config.secrets,
+                _memory_write_secrets_policy(self.config.secrets),
             ):
                 decisions.append(
                     GateDecision(
@@ -364,4 +364,12 @@ def _matches_denied_path(path: str, candidate: str) -> bool:
         path.endswith(f"/{normalized_candidate}")
         or f"/{normalized_candidate}/" in path
         or f"/{normalized_candidate}" in path
+    )
+
+
+def _memory_write_secrets_policy(policy: SecretsPolicy) -> SecretsPolicy:
+    return SecretsPolicy(
+        enabled=True,
+        redact_token=policy.redact_token,
+        allow_dummy_placeholders=policy.allow_dummy_placeholders,
     )
