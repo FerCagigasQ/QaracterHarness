@@ -1,0 +1,26 @@
+{
+  "name": "apolo-cli",
+  "version": "0.1.0",
+  "description": "Local terminal-only CLI for coordinating repository tasks.",
+  "type": "module",
+  "bin": {
+    "apolo": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}
