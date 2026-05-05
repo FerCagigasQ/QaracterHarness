@@ -15,7 +15,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "package:check": "node packaging/validate-npm-package.mjs",
-    "test": "node --test test/integration/*.test.mjs",
+    "test": "node --test test/integration/docs-contract.test.mjs test/integration/package-contract.test.mjs test/integration/security-gates.test.mjs",
     "test:python": "python -m unittest discover -s test/harness -p \"test_*.py\"",
     "smoke:bin": "node packaging/smoke-bin.mjs",
     "ci": "npm run typecheck && npm run package:check && npm test && npm run test:python && npm run smoke:bin"
