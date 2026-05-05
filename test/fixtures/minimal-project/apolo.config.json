@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "workspaceName": "minimal-apolo-workspace",
+  "defaults": {
+    "coordinator": "claude",
+    "localModel": {
+      "provider": "ollama",
+      "model": "qwen"
+    },
+    "maxAgents": 5,
+    "humanApproval": "always"
+  },
+  "agents": [
+    {
+      "name": "planner",
+      "role": "planning",
+      "model": "claude",
+      "requiresApproval": true
+    },
+    {
+      "name": "local-reviewer",
+      "role": "review",
+      "provider": "ollama",
+      "model": "qwen",
+      "requiresApproval": true
+    }
+  ]
+}

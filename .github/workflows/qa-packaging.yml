@@ -1,0 +1,52 @@
+name: QA packaging
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "devin/**"
+
+jobs:
+  package-and-smoke:
+    name: ${{ matrix.os }} / node ${{ matrix.node }} / python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20, 22]
+        python: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: TypeScript validation
+        run: npm run typecheck
+
+      - name: Package contract validation
+        run: npm run package:check
+
+      - name: Node integration tests
+        run: npm test
+
+      - name: Python fixture tests
+        run: npm run test:python
+
+      - name: Global bin smoke test
+        run: npm run smoke:bin
