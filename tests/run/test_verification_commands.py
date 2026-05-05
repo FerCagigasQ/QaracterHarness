@@ -8,7 +8,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from verification.commands import DetectedCommand, VerificationCommandDetector
+from verification.commands import CommandRunner, DetectedCommand, VerificationCommandDetector
+
+
+class StaticDetector:
+    def __init__(self, commands: tuple[DetectedCommand, ...]) -> None:
+        self.commands = commands
+
+    def detect(self, repository: Path) -> tuple[DetectedCommand, ...]:
+        return self.commands
 
 
 class VerificationCommandDetectorTest(unittest.TestCase):
@@ -52,6 +60,23 @@ class VerificationCommandDetectorTest(unittest.TestCase):
                 DetectedCommand("python-tests", ("python", "-m", "unittest", "discover", "-s", "tests")),
                 commands,
             )
+
+    def test_runner_reports_timeout_and_continues_remaining_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            commands = (
+                DetectedCommand("slow", (sys.executable, "-c", "import time; time.sleep(1)")),
+                DetectedCommand("fast", (sys.executable, "-c", "print('ok')")),
+            )
+
+            results = CommandRunner(detector=StaticDetector(commands), timeout_seconds=0.1).run(Path(tempdir))
+
+            self.assertEqual(len(results), 2)
+            self.assertEqual(results[0].name, "slow")
+            self.assertEqual(results[0].exit_code, -1)
+            self.assertFalse(results[0].passed)
+            self.assertIn("timed out", results[0].stderr)
+            self.assertEqual(results[1].name, "fast")
+            self.assertTrue(results[1].passed)
 
 
 if __name__ == "__main__":
