@@ -63,9 +63,25 @@ async function resolveExecutable(candidates: readonly string[], env: Env): Promi
   return null;
 }
 
+function getPathExtensions(env: Env): readonly string[] {
+  const pathExt = env.PATHEXT ?? "";
+  if (!pathExt) {
+    return [""];
+  }
+  return ["", ...pathExt.split(";").map((ext) => ext.toLowerCase())];
+}
+
 async function which(executable: string, env: Env): Promise<string | null> {
+  const extensions = getPathExtensions(env);
+
   if (isAbsolute(executable)) {
-    return (await isExecutable(executable)) ? executable : null;
+    for (const ext of extensions) {
+      const fullPath = ext ? `${executable}${ext}` : executable;
+      if (await isExecutable(fullPath)) {
+        return fullPath;
+      }
+    }
+    return null;
   }
 
   const pathValue = env.PATH ?? "";
@@ -73,9 +89,11 @@ async function which(executable: string, env: Env): Promise<string | null> {
     if (!entry) {
       continue;
     }
-    const candidate = join(entry, executable);
-    if (await isExecutable(candidate)) {
-      return candidate;
+    for (const ext of extensions) {
+      const candidate = ext ? join(entry, `${executable}${ext}`) : join(entry, executable);
+      if (await isExecutable(candidate)) {
+        return candidate;
+      }
     }
   }
 
@@ -132,9 +150,11 @@ function runCommand(
   timeoutMs: number
 ): Promise<CommandResult | null> {
   return new Promise((resolve) => {
+    const useShell = executable.endsWith(".cmd") || executable.endsWith(".bat");
     const child = spawn(executable, args, {
       env: { ...process.env, ...env },
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: useShell
     });
 
     let stdout = "";

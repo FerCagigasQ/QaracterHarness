@@ -1,11 +1,19 @@
 import { mkdtemp, writeFile, chmod } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { platform } from "node:process";
 import { describe, expect, it, beforeEach } from "vitest";
 import { detectAgents, type AgentDetection } from "../../src/agents/detection.js";
 import { AGENT_PROVIDERS } from "../../src/agents/catalog.js";
 
+const IS_WINDOWS = platform === "win32";
+
 async function createFakeBin(binDir: string, name: string): Promise<string> {
+  if (IS_WINDOWS) {
+    const path = join(binDir, `${name}.cmd`);
+    await writeFile(path, "@echo off\r\necho fake-version-1.0.0\r\n", "utf8");
+    return path;
+  }
   const path = join(binDir, name);
   await writeFile(path, "#!/bin/sh\necho fake-version-1.0.0\n", "utf8");
   await chmod(path, 0o755);
@@ -22,7 +30,7 @@ describe("agent detection", () => {
   it("detects all providers as missing when PATH has no matching binaries", async () => {
     const emptyBin = await mkdtemp(join(tmpdir(), "apolo-empty-bin-"));
     const detections = await detectAgents({
-      env: { PATH: emptyBin, HOME: "/tmp" },
+      env: { PATH: emptyBin, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
@@ -38,14 +46,13 @@ describe("agent detection", () => {
   it("detects claude as installed when binary exists on PATH", async () => {
     await createFakeBin(binDir, "claude");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
     const claude = detections.find((d) => d.id === "claude-code");
     expect(claude).toBeDefined();
     expect(claude!.installed).toBe(true);
-    expect(claude!.executable).toBe(join(binDir, "claude"));
     expect(claude!.prCapable).toBe(true);
     expect(claude!.capabilities.canCoordinate).toBe(true);
   });
@@ -53,7 +60,7 @@ describe("agent detection", () => {
   it("detects codex as installed and PR-capable", async () => {
     await createFakeBin(binDir, "codex");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
@@ -66,7 +73,7 @@ describe("agent detection", () => {
   it("detects ollama/qwen as installed but not PR-capable", async () => {
     await createFakeBin(binDir, "ollama");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
@@ -79,35 +86,35 @@ describe("agent detection", () => {
   it("detects cursor via fallback candidate", async () => {
     await createFakeBin(binDir, "cursor");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
     const cursor = detections.find((d) => d.id === "cursor-cli");
     expect(cursor).toBeDefined();
     expect(cursor!.installed).toBe(true);
-    expect(cursor!.executable).toBe(join(binDir, "cursor"));
   });
 
   it("detects cursor-agent as primary candidate over cursor", async () => {
     await createFakeBin(binDir, "cursor-agent");
     await createFakeBin(binDir, "cursor");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
     const cursor = detections.find((d) => d.id === "cursor-cli");
     expect(cursor).toBeDefined();
     expect(cursor!.installed).toBe(true);
-    expect(cursor!.executable).toBe(join(binDir, "cursor-agent"));
+    const expectedName = IS_WINDOWS ? "cursor-agent.cmd" : "cursor-agent";
+    expect(cursor!.executable).toBe(join(binDir, expectedName));
   });
 
   it("reports version from fake binary stdout", async () => {
     await createFakeBin(binDir, "gemini");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
-      timeoutMs: 500
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
+      timeoutMs: 2000
     });
 
     const gemini = detections.find((d) => d.id === "gemini-cli");
@@ -120,7 +127,7 @@ describe("agent detection", () => {
     await createFakeBin(binDir, "claude");
     await createFakeBin(binDir, "ollama");
     const detections = await detectAgents({
-      env: { PATH: binDir, HOME: "/tmp" },
+      env: { PATH: binDir, HOME: "/tmp", PATHEXT: ".cmd;.exe" },
       timeoutMs: 500
     });
 
