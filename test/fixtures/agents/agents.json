@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "name": "planner",
+      "role": "planning",
+      "model": "claude",
+      "requiresApproval": true
+    },
+    {
+      "name": "local-reviewer",
+      "role": "review",
+      "provider": "ollama",
+      "model": "qwen",
+      "requiresApproval": true
+    },
+    {
+      "name": "qa-runner",
+      "role": "qa",
+      "provider": "local",
+      "requiresApproval": true
+    }
+  ],
+  "limits": {
+    "maxAgents": 5
+  }
+}

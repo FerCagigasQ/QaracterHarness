@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "id": "plan-fixture-basic",
+  "title": "Generic repository inspection",
+  "approvalRequired": true,
+  "approved": false,
+  "maxParallelAgents": 2,
+  "steps": [
+    {
+      "id": "step-001",
+      "agent": "planner",
+      "action": "inspect workspace",
+      "sideEffects": false
+    },
+    {
+      "id": "step-002",
+      "agent": "local-reviewer",
+      "action": "review proposed changes",
+      "sideEffects": false
+    }
+  ]
+}
