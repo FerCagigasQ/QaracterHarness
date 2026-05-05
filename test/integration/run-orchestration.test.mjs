@@ -98,6 +98,41 @@ test("apolo run blocks plans that exceed the five-agent gate", async () => {
   assert.doesNotMatch(ledger, /execution.started/);
 });
 
+test("apolo run honors maxAgents from the stable plan contract", async () => {
+  const workspace = await createWorkspace();
+  const planPath = path.join(workspace.cwd, "too-many-contract-agents.json");
+  await writeFile(
+    planPath,
+    `${JSON.stringify(
+      createPlan({
+        approved: true,
+        maxParallelAgents: undefined,
+        maxAgents: 6,
+        steps: [
+          {
+            id: "step-1",
+            agent: "planner",
+            action: "single step",
+            sideEffects: true
+          }
+        ]
+      }),
+      null,
+      2
+    )}\n`,
+    "utf8"
+  );
+
+  const run = await runCli(["run", "--from-plan", planPath, "--fake-agent"], workspace.cwd, workspace.home);
+
+  assert.equal(run.code, 1);
+  assert.match(run.stdout, /APOLO run state: failed/);
+  const ledger = await readFile(ledgerPathFromOutput(run.stdout), "utf8");
+  assert.match(ledger, /max_agents/);
+  assert.doesNotMatch(ledger, /execution.started/);
+});
+
+
 test("apolo run can resume a completed checkpoint without re-executing", async () => {
   const workspace = await createWorkspace();
   const planPath = path.join(workspace.cwd, "plan.json");

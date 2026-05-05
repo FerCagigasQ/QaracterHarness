@@ -26,7 +26,10 @@ function normalizeJsonPlan(parsed: unknown, sourcePath: string): RunPlan {
   const provider = readProvider(parsed);
   const steps = readSteps(parsed, objective);
   const agentsFromPlan = readAgentsFromPlan(parsed);
-  const maxParallelAgents = readPositiveInteger(parsed, "maxParallelAgents") ?? (agentsFromPlan.length || uniqueAgents(steps).length || 1);
+  const maxParallelAgents =
+    readPositiveInteger(parsed, "maxParallelAgents") ??
+    readPositiveInteger(parsed, "maxAgents") ??
+    (agentsFromPlan.length || uniqueAgents(steps).length || 1);
   const verifications = readVerificationSpecs(parsed);
 
   return {

@@ -107,6 +107,23 @@ describe("apolo cli", () => {
     expect(JSON.parse(memory.stdout)).toMatchObject({ ok: true, command: "memory" });
   });
 
+  it("passes command-specific format flags through to memory export", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+
+    const added = await runCli(
+      ["memory", "add", "--title", "Format note", "--body", "Exportable body"],
+      cwd,
+      home
+    );
+    const exported = await runCli(["memory", "export", "--format", "markdown"], cwd, home);
+
+    expect(added.code).toBe(0);
+    expect(exported.code).toBe(0);
+    expect(exported.stdout).toContain("Format note");
+    expect(exported.stdout).toContain("Exportable body");
+  });
+
   it("requires approval before run in non-interactive mode", async () => {
     const run = await runCli(["run", "example task"]);
 
@@ -148,7 +165,7 @@ describe("apolo cli", () => {
   });
 
   it("returns structured JSON for implemented plan command", async () => {
-    const run = await runCli(["plan", "--task", "Add a feature", "--format", "json"]);
+    const run = await runCli(["--json", "plan", "--task", "Add a feature"]);
 
     expect(run.code).toBe(0);
     expect(run.stderr).toBe("");
@@ -198,7 +215,7 @@ describe("apolo cli", () => {
     });
 
     expect(run.code).toBe(0);
-    const parsed = JSON.parse(run.stdout).data;
+    const parsed = JSON.parse(run.stdout);
     expect(parsed.task).toBe("Review CLI UX");
     expect(parsed.dryRun).toBe(true);
     expect(parsed.planner).toBe("deterministic-fallback");
