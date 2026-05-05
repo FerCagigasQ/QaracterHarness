@@ -218,12 +218,13 @@ class MemoryStore:
         if not query.include_compacted:
             clauses.append("is_compacted = 0")
         if query.text and query.text.strip():
-            clauses.append("(lower(title) LIKE ? OR lower(body) LIKE ?)")
-            needle = f"%{query.text.lower()}%"
+            clauses.append("(lower(title) LIKE ? ESCAPE '\\' OR lower(body) LIKE ? ESCAPE '\\')")
+            escaped = query.text.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            needle = f"%{escaped}%"
             parameters.extend([needle, needle])
         for tag in query.tags:
             clauses.append("tags_json LIKE ?")
-            parameters.append(f"%{tag}%")
+            parameters.append(f'%"{tag}"%')
         parameters.append(query.limit)
         sql = f"""
             SELECT * FROM memory_records
