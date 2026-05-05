@@ -231,7 +231,10 @@ class SecurityGateEngine:
                         metadata={"key": memory_write.key},
                     )
                 )
-            if policy.block_sensitive_data and contains_sensitive_data(memory_write.value):
+            if policy.block_sensitive_data and contains_sensitive_data(
+                memory_write.value,
+                self.config.secrets,
+            ):
                 decisions.append(
                     GateDecision(
                         gate="memory_write",
@@ -344,4 +347,4 @@ def _matches_any(path: str, candidates: tuple[str, ...]) -> bool:
 def _matches_path(path: str, candidate: str) -> bool:
     if candidate.endswith("/"):
         return path == candidate[:-1] or path.startswith(candidate)
-    return path == candidate or path.startswith(f"{candidate}/") or candidate in path
+    return path == candidate or path.startswith(f"{candidate}/")

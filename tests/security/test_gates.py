@@ -80,6 +80,17 @@ class SecurityGateEngineTest(unittest.TestCase):
 
         self.assertTrue(_has_block(decisions, "write_scope"))
 
+    def test_blocks_paths_that_only_contain_allowed_file_name(self) -> None:
+        request = PlanRequest(
+            actor="claude",
+            file_writes=(FileWrite(path="evil/apolo.yaml.bak", content="safe text"),),
+            approvals=ApprovalContext(human_run_approved=True),
+        )
+
+        decisions = SecurityGateEngine().evaluate(request)
+
+        self.assertTrue(_has_block(decisions, "write_scope"))
+
     def test_blocks_memory_write_over_limit(self) -> None:
         request = PlanRequest(
             actor="claude",
@@ -88,6 +99,20 @@ class SecurityGateEngineTest(unittest.TestCase):
         )
 
         decisions = SecurityGateEngine().evaluate(request)
+
+        self.assertTrue(_has_block(decisions, "memory_write"))
+
+    def test_memory_write_sensitive_check_honors_secrets_policy(self) -> None:
+        config = PolicyConfig(secrets=SecretsPolicy(allow_dummy_placeholders=False))
+        request = PlanRequest(
+            actor="claude",
+            memory_writes=(
+                MemoryWrite(key="note", value="api_key=DUMMY_SECRET_VALUE"),
+            ),
+            approvals=ApprovalContext(human_run_approved=True),
+        )
+
+        decisions = SecurityGateEngine(config).evaluate(request)
 
         self.assertTrue(_has_block(decisions, "memory_write"))
 
