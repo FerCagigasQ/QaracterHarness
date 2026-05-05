@@ -13,7 +13,7 @@ export function createDefaultManifest(cwd: string, env: Env): ApoloManifest {
       root
     },
     runtime: {
-      backends: ["typescript", "python"]
+      backends: ["typescript"]
     },
     coordinator: {
       provider: "claude",

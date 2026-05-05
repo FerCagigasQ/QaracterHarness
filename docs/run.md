@@ -1,6 +1,6 @@
 # APOLO-CLI run workflow
 
-Workstream 07 owns the run executor, verification, and PR workflow seams.
+Workstream 07 owns the run executor, verification, and PR workflow seams. For APOLO-CLI 1.0, the mandatory product contract is TypeScript/Node.js; Python modules in this area are legacy/reference seams unless they are invoked through stable JSON contracts.
 
 ## Goals
 
@@ -31,7 +31,9 @@ If approval is pending or rejected, the run pauses before branch preparation and
 
 ## Interfaces
 
-`src/run/interfaces.py` defines integration seams for:
+The stable run artifact is the JSONL `apolo.run_event` ledger defined in `src/contracts/schemas.ts` and documented in `docs/product-contracts.md`.
+
+Legacy/reference `src/run/interfaces.py` defines integration seams for:
 
 - plan loading
 - security policy

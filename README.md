@@ -19,7 +19,8 @@ This repository contains the APOLO-CLI MVP foundation:
 
 - npm package and global `apolo` binary contract
 - TypeScript CLI entrypoint and command router
-- Python subsystems for repository initialization, agent adapters, memory, security gates, run orchestration, verification, and PR metadata
+- TypeScript-owned product contracts for command outputs, artifacts, ledgers, memory records, security events, and agent capabilities
+- legacy/reference Python subsystems for repository initialization, agent adapters, memory, security gates, run orchestration, verification, and PR metadata
 - local/global memory schema using SQLite
 - generic documentation, examples, packaging checks, and cross-platform CI
 
@@ -46,7 +47,7 @@ node dist/index.js --help
 Requirements:
 
 - Node.js 20+
-- Python 3.11+ for Python-backed subsystems and tests
+- Python is optional for legacy/reference subsystems and Python-only test harnesses; it is not required to install or run the product 1.0 CLI
 - Git for repository workflows
 - Optional: Ollama with a Qwen model for local analysis
 - Optional: supported agent CLIs installed locally
@@ -139,6 +140,7 @@ Claude is the default coordinator. Codex and Claude are the intended PR-capable 
 
 - [Detailed usage guide](docs/USAGE.md)
 - [System internals](docs/SYSTEM.md)
+- [Product contracts and stable schemas](docs/product-contracts.md)
 - [Command reference](docs/command-reference.md)
 - [Usage guide](docs/usage.md)
 - [Architecture overview](docs/architecture.md)
@@ -161,13 +163,14 @@ packaging/            npm packaging and binary smoke validation
 src/cli/              TypeScript CLI entrypoint, routing, logging, errors
 src/config/           Defaults, config loading, manifest model
 src/fs/               Filesystem layout helpers
-src/init/             Python repository scanner and harness generator
-src/agents/           Agent capability model, detection, adapters, execution
-src/memory/           SQLite memory store, markdown export, redaction
-src/security/         Policy gates and sensitive data checks
-src/run/              Approved-plan execution orchestration
-src/verification/     Verification command detection and execution
-src/git/              Branch and PR draft helpers
+src/contracts/        TypeScript product contracts and stable schema definitions
+src/init/             Legacy/reference repository scanner and harness generator
+src/agents/           Legacy/reference agent capability model, detection, adapters, execution
+src/memory/           Legacy/reference SQLite memory store, markdown export, redaction
+src/security/         Legacy/reference policy gates and sensitive data checks
+src/run/              Legacy/reference approved-plan execution orchestration
+src/verification/     Legacy/reference verification command detection and execution
+src/git/              Legacy/reference branch and PR draft helpers
 test/                 CLI, integration, fixture, and harness tests
 ```
 
@@ -179,7 +182,17 @@ npm run lint
 npm run typecheck
 npm test
 npm run test:integration
+```
+
+Optional legacy/reference validation:
+
+```bash
 npm run test:python
+```
+
+Packaging validation:
+
+```bash
 npm run package:check
 npm run smoke:bin
 ```
@@ -194,7 +207,7 @@ npm run ci
 
 ## Design principles
 
-- Keep the CLI simple: `init -> doctor -> plan -> run`.
+- Keep the CLI simple: `init`, `doctor`, `plan`, `run`, `sync`, `memory`, and `agents`.
 - Make repository context explicit and reusable.
 - Prefer read-only planning before execution.
 - Require human approval before side effects.

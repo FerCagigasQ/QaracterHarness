@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "kind": "apolo.security_event",
+  "id": "sec-fixture-node-1",
+  "createdAt": "2026-05-05T00:00:00.000Z",
+  "command": "run",
+  "actor": "planner",
+  "gate": "human_approval",
+  "decision": "requires_approval",
+  "severity": "warning",
+  "reason": "human approval is required before any run",
+  "approvalRequired": true,
+  "metadata": {
+    "planId": "plan-fixture-node-1"
+  }
+}

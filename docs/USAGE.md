@@ -12,9 +12,10 @@ Minimum:
 
 Recommended:
 
-- Python 3.11+
 - Ollama for local Qwen workflows
 - at least one supported coding-agent CLI installed locally
+
+Python is optional for legacy/reference subsystems and tests; it is not required to install or run the product 1.0 CLI.
 
 Supported operating systems:
 

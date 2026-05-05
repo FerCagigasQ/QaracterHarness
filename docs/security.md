@@ -2,6 +2,8 @@
 
 This workstream defines default local CLI gates that should evaluate a planned run before tools execute. The default stance is deny-by-default for risky behavior and require human approval before any run starts.
 
+For APOLO-CLI 1.0, the portable security event contract is the TypeScript-owned `apolo.security_event` schema in `src/contracts/schemas.ts`. Policy implementations may evolve behind that schema.
+
 ## Default policy shape
 
 `apolo.yaml` should expose a top-level `policy` section:
@@ -40,8 +42,6 @@ policy:
       - run_tests
       - run_lint
       - git_diff
-      - atlassian_read
-      - atlassian_write
       - create_pr
       - update_pr
   write_scope:
@@ -77,9 +77,6 @@ policy:
     pr_writers:
       - claude
       - codex
-    atlassian_writers:
-      - claude
-      - codex
 ```
 
 ## Gate behavior
@@ -95,7 +92,6 @@ policy:
 | Budget | Blocks runs that exceed tool call, runtime, or estimated cost limits unless explicitly approved. |
 | Diff size | Blocks risky diffs that exceed file or line thresholds unless explicitly approved. |
 | PR permission | Blocks PR create/update tools for actors other than `claude` and `codex`. |
-| Atlassian write permission | Allows reads by policy, but blocks write tools for actors other than `claude` and `codex`. |
 
 ## Redaction
 
@@ -110,6 +106,6 @@ Execution may continue only when:
 1. The human approval gate passes.
 2. No blocking decision is returned.
 3. Any decision that requires approval has a matching explicit approval flag.
-4. PR and Atlassian write tools are requested only by approved actors.
+4. PR write tools are requested only by approved actors.
 
 Store policy overrides in `apolo.yaml`. If the file is missing, use `PolicyConfig.defaults()`.

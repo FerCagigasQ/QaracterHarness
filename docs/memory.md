@@ -7,6 +7,8 @@ APOLO stores sanitized local memory in two namespaces:
 
 Only sanitized summaries, decisions, and stable project context should be committed. Do not store credentials, tokens, private keys, customer data, or other sensitive data. The write path runs redaction before persistence and marks records as `redacted`.
 
+The APOLO-CLI 1.0 product contract for portable records is the TypeScript-owned `apolo.memory_record` schema in `src/contracts/schemas.ts`. SQLite and markdown implementations are storage details behind that JSON contract.
+
 ## Record types
 
 - `decision`: durable design or product decision. No default expiry.

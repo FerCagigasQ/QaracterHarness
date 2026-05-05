@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "apolo.plan",
+  "id": "plan-fixture-node-1",
+  "createdAt": "2026-05-05T00:00:00.000Z",
+  "command": "plan",
+  "runtime": {
+    "mandatoryRuntime": "node",
+    "implementationLanguage": "typescript",
+    "minimumNodeVersion": ">=20",
+    "python": "optional-legacy"
+  },
+  "task": "Add schema validation for a CLI-only workflow",
+  "status": "awaiting_approval",
+  "approvalRequired": true,
+  "maxAgents": 2,
+  "agents": [
+    "planner",
+    "local-reviewer"
+  ],
+  "steps": [
+    {
+      "id": "step-001",
+      "title": "Inspect public CLI contracts",
+      "agent": "planner",
+      "action": "Read docs and schema fixtures",
+      "sideEffects": false,
+      "approvalRequired": false
+    },
+    {
+      "id": "step-002",
+      "title": "Prepare approved implementation",
+      "agent": "local-reviewer",
+      "action": "Run verification after approval",
+      "sideEffects": true,
+      "approvalRequired": true
+    }
+  ],
+  "verification": [
+    "npm run lint",
+    "npm test"
+  ],
+  "security": {
+    "humanApproval": "always",
+    "writeScope": [
+      "src/",
+      "tests/",
+      "docs/",
+      ".apolo/"
+    ],
+    "secretsRedaction": true
+  }
+}
