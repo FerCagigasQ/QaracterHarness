@@ -45,6 +45,7 @@ apolo doctor
 Recommended checks:
 
 - Node.js version supports the package
+- Python is available only when verifying a Python target repository or an explicitly enabled future plugin
 - Ollama is reachable when local Qwen workflows are enabled
 - workspace config is valid
 - agent count is 5 or fewer

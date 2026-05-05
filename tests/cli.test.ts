@@ -31,6 +31,8 @@ describe("apolo cli", () => {
     const manifest = await readFile(join(cwd, ".apolo", "manifest.json"), "utf8");
     expect(manifest).toContain('"provider": "claude"');
     expect(manifest).toContain('"defaultModel": "qwen"');
+    expect(manifest).toContain('"backends": [\n      "typescript"\n    ]');
+    expect(manifest).not.toContain('"python"');
     expect(manifest).toContain('"maxPerTask": 5');
     expect(manifest).toContain('"initMode": "pull-request"');
     expect(manifest).toContain('"directMain": false');

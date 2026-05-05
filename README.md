@@ -19,8 +19,9 @@ This repository contains the APOLO-CLI MVP foundation:
 
 - npm package and global `apolo` binary contract
 - TypeScript CLI entrypoint and command router
-- TypeScript foundations for memory, security gates, redaction, and verification
-- local/global memory storage using JSONL with a storage abstraction for future SQLite support
+- TypeScript/Node.js runtime defaults for installation, command UX, config loading, and package execution
+- optional Python code for target-repository verification, test fixtures, and future plugin boundaries
+- local/global memory schema using SQLite
 - generic documentation, examples, packaging checks, and cross-platform CI
 
 The core contract is in place, but the public TypeScript router still exposes some provider workflows as integration seams or stubs. Treat the current package as an MVP foundation, not a fully polished production agent runner.
@@ -47,7 +48,7 @@ Requirements:
 
 - Node.js 20+
 - Git for repository workflows
-- Optional: Python 3.11+ for legacy/fixture harness tests and optional Python-backed integrations
+- Optional: Python 3.11+ only when verifying a Python target repository, running Python fixture tests from this source checkout, or developing a future Python plugin
 - Optional: Ollama with a Qwen model for local analysis
 - Optional: supported agent CLIs installed locally
 
@@ -120,6 +121,9 @@ Execution must be based on an approved plan. APOLO enforces human approval befor
 | PR providers | Claude or Codex |
 | Memory | JSONL, local-first, global + repository namespaces |
 | Supported OS | Windows, macOS, Linux |
+| Runtime | TypeScript/Node.js only |
+
+Python is not a runtime dependency of the npm package. Python remains useful as a target-repository verifier when a repository contains Python tests, and as a development/test harness for this source tree.
 
 ## Supported agent adapters
 
@@ -152,6 +156,7 @@ Claude is the default coordinator. Codex and Claude are the intended PR-capable 
 - [Cross-platform notes](docs/cross-platform.md)
 - [Test strategy](docs/test-strategy.md)
 - [Examples](docs/examples.md)
+- [Changelog](CHANGELOG.md)
 
 ## Repository layout
 
@@ -162,13 +167,13 @@ packaging/            npm packaging and binary smoke validation
 src/cli/              TypeScript CLI entrypoint, routing, logging, errors
 src/config/           Defaults, config loading, manifest model
 src/fs/               Filesystem layout helpers
-src/init/             Repository scanner and harness generator
-src/agents/           Agent capability model, detection, adapters, execution
-src/memory/           JSONL memory store, CLI commands, export, redaction
-src/security/         TypeScript policy gates and sensitive data checks
-src/run/              Approved-plan execution orchestration
-src/verification/     Verification command detection and execution
-src/git/              Branch and PR draft helpers
+src/init/             Optional Python scanner/generator code for target repo analysis and future plugins
+src/agents/           Optional agent capability/adapters code for future plugin boundaries
+src/memory/           Memory store, markdown export, and redaction implementation experiments
+src/security/         Policy gates and sensitive data checks used by development tests
+src/run/              Approved-plan execution orchestration seams
+src/verification/     Verification command detection for target repositories
+src/git/              Branch and PR draft helper seams
 test/                 CLI, integration, fixture, and harness tests
 ```
 

@@ -8,6 +8,10 @@
   },
   "files": [
     "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "docs/",
+    "examples/",
     "package.json"
   ],
   "scripts": {

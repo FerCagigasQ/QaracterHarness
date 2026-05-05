@@ -57,12 +57,15 @@ Tests can pass `--fake-agent` to exercise orchestration without invoking real ag
 
 `src/verification/commands.ts` detects common local checks for the target repository:
 
+- Python target repositories: `python -m unittest discover` when Python project/test files exist.
 - Node: `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run test` when present in `package.json`.
 - Python target repos: `python -m ruff check .`, `python -m mypy .`, `python -m pytest`, or `python -m unittest discover -s tests` when project markers request them. Python is detected as a target repo stack, not required for the APOLO npm runtime.
 - Make: `make lint`, `make typecheck`, `make build`, and `make test` when targets are present.
 - Safe fallback: a no-op structured success when no known stack is detected.
 
 The command runner applies per-command timeouts, redacts output, returns structured results, and does not terminate orchestration on the first failing check.
+
+These Python checks are target-repository verification commands, not an APOLO npm runtime dependency.
 
 ## PR workflow
 

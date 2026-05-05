@@ -1,0 +1,4 @@
+[project]
+name = "apolo-e2e-python-target"
+version = "0.0.0"
+requires-python = ">=3.11"

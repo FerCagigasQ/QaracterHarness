@@ -9,7 +9,7 @@ Workstream 08 provides the test surface that implementation PRs can plug into wi
 | TypeScript validation | `npm run typecheck` | Validate JavaScript/TypeScript syntax and project config. |
 | Package contract | `npm run package:check` | Validate npm metadata and pack contents. |
 | Node integration | `npm test` | Validate docs, command references, package contract, and fixture shape. |
-| Legacy Python harness compatibility | `npm run test:python` | Skip cleanly by default; run legacy fixture tests only when `APOLO_RUN_LEGACY_PYTHON_TESTS=1`. |
+| Python fixtures | `npm run test:python` | Validate source-checkout fixtures and optional Python harness helpers. |
 | Global bin smoke | `npm run smoke:bin` | Pack, install, and execute the global `apolo` bin from a temporary prefix. |
 
 ## CI matrix
@@ -24,9 +24,19 @@ The workflow runs on:
 
 This catches path, shell, npm shim, and package compatibility issues early.
 
+The npm package runtime is TypeScript/Node.js-only. Python matrix jobs validate source fixtures and Python target-repository verification behavior; they do not imply Python is required to install or run `apolo`.
+
 ## Fixture contract
 
 Fixtures under `test/fixtures/` model a generic minimal workspace.
+
+E2E fixtures under `test/fixtures/e2e/` cover:
+
+- a Node repository with `lint`, `typecheck`, `build`, and `test` npm scripts
+- a Python target repository used only for target verification behavior
+- a repository with no tests
+- a repository with a simulated dummy secret marker
+- fake agent binaries for PATH-based CLI smoke scenarios
 
 Required policies:
 

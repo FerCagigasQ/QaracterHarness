@@ -1,0 +1,15 @@
+{
+  "fakeBinDirectory": "bin",
+  "agents": [
+    {
+      "name": "claude",
+      "command": "claude",
+      "expectedOutput": "fake claude"
+    },
+    {
+      "name": "codex",
+      "command": "codex",
+      "expectedOutput": "fake codex"
+    }
+  ]
+}
