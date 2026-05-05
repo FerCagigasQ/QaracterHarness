@@ -17,3 +17,14 @@ class RedactionTest(unittest.TestCase):
 
         self.assertFalse(find_sensitive_data(text))
         self.assertEqual(redact_text(text), text)
+
+    def test_redacts_generic_pkcs8_private_key_block(self) -> None:
+        text = (
+            "-----BEGIN PRIVATE KEY-----\n"
+            "DUMMY_PRIVATE_KEY_BLOCK_CONTENT\n"
+            "-----END PRIVATE KEY-----"
+        )
+        policy = SecretsPolicy(allow_dummy_placeholders=False)
+
+        self.assertTrue(contains_sensitive_data(text, policy))
+        self.assertEqual(redact_text(text, policy), "[REDACTED_SECRET]")
