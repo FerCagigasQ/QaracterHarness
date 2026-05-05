@@ -1,15 +1,8 @@
-import { ApoloError } from "../core/errors.js";
+import { ApoloError } from "./errors.js";
 import type { CliContext } from "./context.js";
-import type { CommandResult } from "../core/results.js";
-import { InitCommandService } from "./services/init.js";
-import { DoctorCommandService } from "./services/doctor.js";
-import {
-  AgentsCommandService,
-  MemoryCommandService,
-  PlanCommandService,
-  RunCommandService,
-  SyncCommandService
-} from "./services/info.js";
+import { loadConfig } from "../config/loader.js";
+import { fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { formatInitResult, parseInitOptions, runApoloInit } from "../init/workspace.js";
 
 export interface Command {
   readonly name: string;
@@ -21,8 +14,8 @@ export interface Command {
 export const commands: readonly Command[] = [
   {
     name: "init",
-    summary: "Create the local APOLO filesystem layout and manifest.",
-    usage: "apolo init",
+    summary: "Create or update generic APOLO harness artifacts.",
+    usage: "apolo init [--dry-run] [--format json|text] [--force]",
     run: runInit
   },
   {
@@ -89,16 +82,8 @@ export async function dispatch(args: readonly string[], context: CliContext): Pr
   }
 
   if (commandArgs.includes("--help") || commandArgs.includes("-h")) {
-    return {
-      ok: true,
-      command: command.name,
-      exitCode: 0,
-      message: `${command.usage}\n\n${command.summary}`,
-      data: {
-        usage: command.usage,
-        summary: command.summary
-      }
-    };
+    context.stdout.write(`${command.usage}\n\n${command.summary}\n${formatCommandOptions(command.name)}`);
+    return 0;
   }
 
   return command.run(commandArgs, context);
@@ -128,9 +113,20 @@ export function formatHelp(): string {
   ].join("\n");
 }
 
-async function runInit(args: readonly string[], context: CliContext): Promise<CommandResult> {
-  rejectUnexpectedArgs("init", args);
-  return new InitCommandService().execute({ args }, context);
+async function runInit(args: readonly string[], context: CliContext): Promise<number> {
+  let options;
+  try {
+    options = parseInitOptions(args);
+  } catch (error) {
+    throw new ApoloError(error instanceof Error ? error.message : "Invalid apolo init options.", {
+      exitCode: 2,
+      hint: "Run `apolo init --help` for usage."
+    });
+  }
+
+  const result = await runApoloInit(context.cwd, context.env, options);
+  context.stdout.write(formatInitResult(result, options.format));
+  return result.summary.conflicts.length > 0 ? 1 : 0;
 }
 
 async function runDoctor(args: readonly string[], context: CliContext): Promise<CommandResult> {
@@ -190,4 +186,20 @@ function rejectUnexpectedArgs(command: string, args: readonly string[]): void {
       hint: `Run \`apolo ${command} --help\` for usage.`
     });
   }
+}
+
+function formatCommandOptions(command: string): string {
+  if (command !== "init") {
+    return "";
+  }
+
+  return [
+    "",
+    "Options:",
+    "  --dry-run            Show planned changes without writing.",
+    "  --format json|text   Select output format.",
+    "  --json               Alias for --format json.",
+    "  --force              Update APOLO-managed files with managed markers.",
+    ""
+  ].join("\n");
 }
