@@ -60,6 +60,7 @@ npm run build
 - [Usage guide](docs/usage.md)
 - [Architecture overview](docs/architecture.md)
 - [Packaging and release validation](docs/packaging.md)
+- [Plan approval run workflow](docs/plan-approval-run.md)
 - [Cross-platform notes](docs/cross-platform.md)
 - [Test strategy](docs/test-strategy.md)
 - [Examples](docs/examples.md)
@@ -73,11 +74,15 @@ packaging/            npm package and bin validation scripts
 src/cli/              TypeScript CLI entrypoint, routing, logging, and error handling
 src/config/           Configuration defaults, loader, and manifest model
 src/fs/               Filesystem layout helpers
+src/plan/             Read-only planning and approval status records
+src/run/              Run executor interfaces and handoff seams
 test/fixtures/        Reusable integration fixtures for future command tests
 test/harness/         Python fixture and CLI harness helpers
 test/integration/     Node-based docs/package contract tests
 .github/workflows/    Cross-platform packaging and smoke CI
 ```
+
+`apolo init` creates `.apolo/manifest.json`, `.apolo/memory/`, `.apolo/plans/`, and `.apolo/approvals/`.
 
 ## Local validation
 

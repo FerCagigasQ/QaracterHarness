@@ -4,6 +4,9 @@ import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
 import { createDefaultManifest } from "../config/defaults.js";
 import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { setApprovalStatus } from "../plan/approval.js";
+import { generatePlan } from "../plan/generator.js";
+import { validateRunFromPlan } from "../run/fromPlan.js";
 
 export interface Command {
   readonly name: string;
@@ -29,12 +32,24 @@ export const commands: readonly Command[] = [
     name: "plan",
     summary: "Plan a task before execution.",
     usage: "apolo plan <task>",
-    run: async (_args, context) => writeStub(context, "plan", "planning")
+    run: runPlan
+  },
+  {
+    name: "approve",
+    summary: "Approve a generated plan.",
+    usage: "apolo approve <plan-id>",
+    run: (args, context) => updatePlanApproval(args, context, "approved")
+  },
+  {
+    name: "reject",
+    summary: "Reject a generated plan.",
+    usage: "apolo reject <plan-id>",
+    run: (args, context) => updatePlanApproval(args, context, "rejected")
   },
   {
     name: "run",
     summary: "Run an approved task.",
-    usage: "apolo run <task> --approve",
+    usage: "apolo run --from-plan <plan-id>",
     run: runTask
   },
   {
@@ -143,7 +158,48 @@ async function runDoctor(args: readonly string[], context: CliContext): Promise<
   return 0;
 }
 
+async function runPlan(args: readonly string[], context: CliContext): Promise<number> {
+  const task = args.join(" ").trim();
+  if (!task) {
+    throw new ApoloError("apolo plan requires a task description.", {
+      exitCode: 2,
+      hint: "Run `apolo plan \"your task\"` to create a read-only plan."
+    });
+  }
+
+  const result = await generatePlan({ cwd: context.cwd, env: context.env, task });
+  context.stdout.write(`Plan written: ${result.path}\n`);
+  context.stdout.write(`Approval pending: ${result.approvalPath}\n`);
+  context.stdout.write(`Next: apolo approve ${result.record.id}\n`);
+  return 0;
+}
+
+async function updatePlanApproval(
+  args: readonly string[],
+  context: CliContext,
+  status: "approved" | "rejected"
+): Promise<number> {
+  const planId = requireSingleArgument(status === "approved" ? "approve" : "reject", args);
+  const approval = await setApprovalStatus(context.cwd, context.env, planId, status);
+  context.stdout.write(`Plan ${approval.planId} is ${approval.status}.\n`);
+  return 0;
+}
+
 async function runTask(args: readonly string[], context: CliContext): Promise<number> {
+  if (args[0] === "--from-plan") {
+    const planId = args[1];
+    if (!planId || args.length > 2) {
+      throw new ApoloError("apolo run --from-plan requires exactly one plan id.", {
+        exitCode: 2,
+        hint: "Run `apolo run --from-plan <plan-id>` after approving the plan."
+      });
+    }
+    const handoff = await validateRunFromPlan(context.cwd, context.env, planId);
+    context.stdout.write(`Run handoff validated for plan ${handoff.planId}.\n`);
+    context.stdout.write("Executor integration point reached; full run execution is out of scope.\n");
+    return 0;
+  }
+
   const approved = await requestHumanApproval(args, context);
 
   if (!approved) {
@@ -204,4 +260,14 @@ function rejectUnexpectedArgs(command: string, args: readonly string[]): void {
       hint: `Run \`apolo ${command} --help\` for usage.`
     });
   }
+}
+
+function requireSingleArgument(command: string, args: readonly string[]): string {
+  if (args.length !== 1 || !args[0]) {
+    throw new ApoloError(`apolo ${command} requires exactly one plan id.`, {
+      exitCode: 2,
+      hint: `Run \`apolo ${command} <plan-id>\`.`
+    });
+  }
+  return args[0];
 }
