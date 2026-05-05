@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "workspaceId": "fixture-workspace",
+  "lastSyncAt": null,
+  "pendingOutgoing": [
+    {
+      "kind": "plan",
+      "id": "plan-fixture-basic",
+      "requiresApproval": true
+    }
+  ],
+  "pendingIncoming": []
+}
