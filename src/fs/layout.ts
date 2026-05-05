@@ -12,6 +12,8 @@ export interface ApoloPaths {
   readonly globalMemoryDb: string;
   readonly repoHome: string;
   readonly repoMemoryDb: string;
+  readonly plansDir: string;
+  readonly approvalsDir: string;
   readonly manifestPath: string;
   readonly configPath: string;
 }
@@ -37,6 +39,8 @@ export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
     globalMemoryDb: join(globalHome, "memory", "global.sqlite"),
     repoHome,
     repoMemoryDb: join(repoHome, "memory", "repo.sqlite"),
+    plansDir: join(repoHome, "plans"),
+    approvalsDir: join(repoHome, "approvals"),
     manifestPath: join(repoHome, MANIFEST_FILE_NAME),
     configPath: join(cwd, CONFIG_FILE_NAME)
   };
@@ -45,6 +49,8 @@ export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
 export async function ensureRepoLayout(paths: ApoloPaths): Promise<void> {
   await mkdir(join(paths.globalHome, "memory"), { recursive: true });
   await mkdir(join(paths.repoHome, "memory"), { recursive: true });
+  await mkdir(paths.plansDir, { recursive: true });
+  await mkdir(paths.approvalsDir, { recursive: true });
 }
 
 export async function fileExists(path: string): Promise<boolean> {

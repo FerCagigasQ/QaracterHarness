@@ -70,6 +70,31 @@ describe("apolo cli", () => {
     expect(run.code).toBe(0);
     expect(run.stdout).toContain("task execution interface ready");
   });
+
+  it("creates a plan, records approval, and validates run handoff", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+
+    const planned = await runCli(["plan", "Implement user settings feature"], cwd, home);
+    expect(planned.code).toBe(0);
+    expect(planned.stdout).toContain("Approval pending");
+
+    const match = planned.stdout.match(/Next: apolo approve (.+)\n/);
+    expect(match?.[1]).toBeTruthy();
+    const planId = match?.[1] ?? "";
+
+    const blocked = await runCli(["run", "--from-plan", planId], cwd, home);
+    expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain("human approval is required");
+
+    const approved = await runCli(["approve", planId], cwd, home);
+    expect(approved.code).toBe(0);
+    expect(approved.stdout).toContain("is approved");
+
+    const handoff = await runCli(["run", "--from-plan", planId], cwd, home);
+    expect(handoff.code).toBe(0);
+    expect(handoff.stdout).toContain("Run handoff validated");
+  });
 });
 
 async function runCli(
