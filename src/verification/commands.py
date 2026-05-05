@@ -4,7 +4,6 @@ import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 from run.types import VerificationResult
 
@@ -54,7 +53,7 @@ class VerificationCommandDetector:
 
 
 class CommandRunner:
-    def __init__(self, detector: VerificationCommandDetector | None = None, timeout_seconds: int = 600) -> None:
+    def __init__(self, detector: VerificationCommandDetector | None = None, timeout_seconds: float = 600) -> None:
         self.detector = detector or VerificationCommandDetector()
         self.timeout_seconds = timeout_seconds
 
@@ -62,18 +61,35 @@ class CommandRunner:
         return tuple(self.run_command(repository, command) for command in self.detector.detect(repository))
 
     def run_command(self, repository: Path, command: DetectedCommand) -> VerificationResult:
-        completed = subprocess.run(
-            command.command,
-            cwd=repository,
-            capture_output=True,
-            check=False,
-            text=True,
-            timeout=self.timeout_seconds,
-        )
-        return VerificationResult(
-            name=command.name,
-            command=command.command,
-            exit_code=completed.returncode,
-            stdout=completed.stdout,
-            stderr=completed.stderr,
-        )
+        try:
+            completed = subprocess.run(
+                command.command,
+                cwd=repository,
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=self.timeout_seconds,
+            )
+            return VerificationResult(
+                name=command.name,
+                command=command.command,
+                exit_code=completed.returncode,
+                stdout=completed.stdout,
+                stderr=completed.stderr,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return VerificationResult(
+                name=command.name,
+                command=command.command,
+                exit_code=-1,
+                stdout=_to_text(exc.stdout),
+                stderr=f"Command timed out after {self.timeout_seconds} seconds.",
+            )
+
+
+def _to_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode(errors="replace")
+    return value

@@ -26,6 +26,8 @@ function run(command, args, options = {}) {
 }
 
 try {
+  run("npm", ["run", "build"]);
+
   const packOutput = run("npm", ["pack", "--json", "--pack-destination", temp]);
   const packInfo = JSON.parse(packOutput)[0];
   const tarball = join(temp, packInfo.filename);
@@ -49,9 +51,8 @@ try {
     }
   }
 
-  const doctor = run(apoloBin, ["doctor", "--dry-run"], { cwd: temp });
-  const parsed = JSON.parse(doctor);
-  if (parsed.command !== "doctor" || parsed.approval !== "always" || parsed.maxAgents !== 5) {
+  const doctor = run(apoloBin, ["doctor"], { cwd: temp });
+  if (!doctor.includes("approval: always") || !doctor.includes("max agents per task: 5")) {
     throw new Error(`Unexpected doctor dry-run output: ${doctor}`);
   }
 

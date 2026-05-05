@@ -2,13 +2,14 @@
 
 APOLO CLI is a local-first command line interface for planning, running, synchronizing, and auditing multi-agent development workflows from a terminal.
 
-This repository currently defines the workstream 08 quality, packaging, and documentation layer:
+This repository includes the workstream 01 CLI core and the workstream 08 quality, packaging, and documentation layer:
 
 - user-facing usage docs and command reference
 - architecture and cross-platform notes
 - npm package metadata and global `apolo` bin smoke validation
 - integration test harness and fixtures that implementation PRs can reuse
 - Windows, macOS, and Linux CI matrix for Node.js and Python compatibility
+- TypeScript CLI entrypoint, command routing, config loading, logging, filesystem layout helpers, manifest model, and baseline tests
 
 ## MVP defaults
 
@@ -34,7 +35,24 @@ apolo plan --task "Summarize the current repository and propose next steps"
 apolo run --plan .apolo/plans/latest.json
 ```
 
-The package included in this branch exposes a packaging shim only. Runtime command implementations should replace the shim while keeping the same binary and command contracts.
+The package now exposes the TypeScript CLI core. Command internals owned by later workstreams should replace stubs while keeping the same binary and command contracts.
+
+
+## CLI core implementation
+
+Workstream 01 replaces the packaging shim with the TypeScript CLI core owned by this repository bootstrap layer. The implemented core includes command routing, configuration defaults, logging, filesystem layout helpers, a manifest model, and basic error handling. Later-workstream command internals remain as stable stubs/interfaces until their owners fill them in.
+
+Local source validation for the TypeScript CLI core:
+
+```bash
+npm install
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+`apolo init` creates `.apolo/manifest.json` and local SQLite memory paths under `.apolo/memory/`. Global memory defaults to `~/.apolo/memory/global.sqlite`; set `APOLO_HOME` to override the global APOLO directory.
 
 ## Documentation
 
@@ -52,6 +70,9 @@ The package included in this branch exposes a packaging shim only. Runtime comma
 docs/                 User docs, command reference, architecture, QA strategy
 examples/             Copyable generic configuration and workflow examples
 packaging/            npm package and bin validation scripts
+src/cli/              TypeScript CLI entrypoint, routing, logging, and error handling
+src/config/           Configuration defaults, loader, and manifest model
+src/fs/               Filesystem layout helpers
 test/fixtures/        Reusable integration fixtures for future command tests
 test/harness/         Python fixture and CLI harness helpers
 test/integration/     Node-based docs/package contract tests
@@ -62,6 +83,8 @@ test/integration/     Node-based docs/package contract tests
 
 ```bash
 npm ci
+npm run typecheck
+npm run lint
 npm run typecheck
 npm run package:check
 npm test
