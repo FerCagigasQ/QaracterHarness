@@ -11,6 +11,7 @@ export interface ApoloPaths {
   readonly globalHome: string;
   readonly globalMemoryDb: string;
   readonly repoHome: string;
+  readonly plansDir: string;
   readonly repoMemoryDb: string;
   readonly manifestPath: string;
   readonly configPath: string;
@@ -36,6 +37,7 @@ export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
     globalHome,
     globalMemoryDb: join(globalHome, "memory", "global.sqlite"),
     repoHome,
+    plansDir: join(repoHome, "plans"),
     repoMemoryDb: join(repoHome, "memory", "repo.sqlite"),
     manifestPath: join(repoHome, MANIFEST_FILE_NAME),
     configPath: join(cwd, CONFIG_FILE_NAME)

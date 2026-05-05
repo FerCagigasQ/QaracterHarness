@@ -4,6 +4,7 @@ import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
 import { createDefaultManifest } from "../config/defaults.js";
 import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { runPlan } from "../planning/cli.js";
 
 export interface Command {
   readonly name: string;
@@ -28,8 +29,8 @@ export const commands: readonly Command[] = [
   {
     name: "plan",
     summary: "Plan a task before execution.",
-    usage: "apolo plan <task>",
-    run: async (_args, context) => writeStub(context, "plan", "planning")
+    usage: "apolo plan --task \"...\" [--dry-run] [--format json]",
+    run: runPlan
   },
   {
     name: "run",
