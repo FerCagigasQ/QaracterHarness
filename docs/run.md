@@ -53,11 +53,13 @@ Dry-run mode still loads the approved plan, checks policy, routes logical agents
 
 `src/verification/commands.py` detects common local checks:
 
-- Python: `python -m unittest discover` when Python project/test files exist.
+- Python target repositories: `python -m unittest discover` when Python project/test files exist.
 - Node: `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run test` when present in `package.json`.
 - Make: `make lint`, `make typecheck`, `make build`, and `make test` when targets are present.
 
 The command runner returns structured results and does not terminate orchestration on the first failing check.
+
+These Python checks are target-repository verification commands, not an APOLO npm runtime dependency.
 
 ## PR workflow
 

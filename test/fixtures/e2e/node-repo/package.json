@@ -1,0 +1,11 @@
+{
+  "name": "apolo-e2e-node-repo",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "node scripts/check.mjs lint",
+    "typecheck": "node scripts/check.mjs typecheck",
+    "build": "node scripts/check.mjs build",
+    "test": "node scripts/check.mjs test"
+  }
+}

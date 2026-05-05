@@ -105,11 +105,11 @@ Each run follows a lifecycle:
 
 The run ledger records lifecycle events so execution can be audited later.
 
-## TypeScript and Python split
+## TypeScript/Node.js runtime
 
-APOLO uses TypeScript for the public CLI and Python for several implementation subsystems.
+APOLO 1.0 uses TypeScript/Node.js for the installed runtime. The npm package exposes the global `apolo` binary, command routing, config loading, filesystem layout helpers, manifest defaults, and package validation without requiring Python.
 
-### TypeScript owns
+### TypeScript/Node.js owns
 
 - global npm binary
 - CLI entrypoint
@@ -129,16 +129,13 @@ src/config/
 src/fs/
 ```
 
-### Python owns
+### Optional Python code
 
-- repository scanning
-- harness generation
-- agent adapter definitions
-- security gate engine
-- SQLite memory store
-- run orchestration seams
-- verification command detection
-- Git/PR metadata helpers
+Python in this repository is not an npm runtime dependency. It is retained for:
+
+- source-checkout fixture and policy tests
+- Python target-repository verification
+- future plugin or worker boundaries that can be invoked explicitly
 
 Key paths:
 
@@ -152,7 +149,7 @@ src/verification/
 src/git/
 ```
 
-The boundary should stay explicit: Python helpers should receive structured input and return structured output. The TypeScript layer should remain the stable user interface.
+The boundary must stay explicit: optional Python helpers should receive structured input and return structured output, and the TypeScript layer remains the stable user interface.
 
 ## Workspace and global layout
 

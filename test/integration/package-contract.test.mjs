@@ -13,6 +13,12 @@ test("package exposes the apolo binary", () => {
   assert.ok(statSync(join(root, packageJson.bin.apolo)).isFile());
 });
 
+test("package declares a Node-only runtime contract", () => {
+  assert.equal(packageJson.engines.node, ">=20");
+  assert.deepEqual(packageJson.files, ["dist", "README.md", "CHANGELOG.md", "docs/", "examples/", "package.json"]);
+  assert.equal(packageJson.dependencies, undefined);
+});
+
 test("package has validation scripts", () => {
   for (const script of ["lint", "typecheck", "package:check", "test", "test:python", "smoke:bin", "ci", "build"]) {
     assert.equal(typeof packageJson.scripts[script], "string", `missing ${script}`);

@@ -6,7 +6,7 @@ export type CoordinatorProvider = "claude";
 export type ApprovalPolicy = "always";
 export type MemoryDriver = "sqlite";
 export type InitMode = "pull-request";
-export type RuntimeBackend = "typescript" | "python";
+export type RuntimeBackend = "typescript";
 
 export interface AgentManifestEntry {
   readonly name: string;
