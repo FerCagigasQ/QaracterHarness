@@ -45,7 +45,9 @@ apolo doctor
 Recommended checks:
 
 - Node.js version supports the package
-- npm package and `apolo` bin are available
+- npm is available for the primary global install workflow
+- Git is available for repository workflows
+- Python is reported only as an optional runtime when detected
 - Ollama is reachable when local Qwen workflows are enabled
 - workspace config is valid
 - agent count is 5 or fewer
@@ -141,8 +143,3 @@ Expected behavior:
 | `64` | Command contract exists, but runtime implementation is unavailable or blocked. |
 | `70` | Dependency or environment check failed. |
 | `78` | Configuration invalid. |
-| `130` | User interrupted the command. |
-
-## Stable artifacts
-
-The TypeScript source of truth for command contracts, exit codes, and stable artifact schemas is `src/contracts/schemas.ts`. See [`product-contracts.md`](product-contracts.md) for the `apolo.plan`, `apolo.run_event`, `apolo.memory_record`, `apolo.security_event`, and `apolo.agent_capability` schemas.

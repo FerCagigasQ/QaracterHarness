@@ -32,7 +32,8 @@ describe("apolo cli", () => {
     expect(manifest).toContain('"maxPerTask": 5');
     expect(manifest).toContain('"initMode": "pull-request"');
     expect(manifest).toContain('"directMain": false');
-    expect(JSON.parse(manifest).runtime.backends).toEqual(["typescript"]);
+    expect(manifest).toContain('"backends": [\n      "typescript"\n    ]');
+    expect(manifest).not.toContain('"python"');
   });
 
   it("uses APOLO_HOME as the global APOLO directory", async () => {
@@ -53,9 +54,36 @@ describe("apolo cli", () => {
 
     expect(run.code).toBe(0);
     expect(run.stdout).toContain("coordinator: claude");
+    expect(run.stdout).toContain("node: ");
+    expect(run.stdout).toContain("npm: ");
+    expect(run.stdout).toContain("git: ");
+    expect(run.stdout).toContain("python: ");
+    expect(run.stdout).toContain("optional");
     expect(run.stdout).toContain("approval: always");
     expect(run.stdout).toContain("ollama default model: qwen");
     expect(run.stdout).toContain("max agents per task: 5");
+  });
+
+  it("returns structured JSON for doctor output", async () => {
+    const run = await runCli(["doctor", "--format", "json"]);
+
+    expect(run.code).toBe(0);
+    expect(run.stderr).toBe("");
+    const payload = JSON.parse(run.stdout);
+    expect(payload).toMatchObject({
+      ok: true,
+      command: "doctor",
+      exitCode: 0
+    });
+    expect(payload.data.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "node" }),
+        expect.objectContaining({ name: "npm" }),
+        expect.objectContaining({ name: "git" }),
+        expect.objectContaining({ name: "python" })
+      ])
+    );
+    expect(payload.data.checks.find((check: { name: string }) => check.name === "python").detail).toContain("optional");
   });
 
   it("requires approval before run in non-interactive mode", async () => {
@@ -65,11 +93,51 @@ describe("apolo cli", () => {
     expect(run.stderr).toContain("requires explicit human approval");
   });
 
-  it("accepts explicit approval for run stub", async () => {
+  it("returns explicit not-implemented for run business logic after approval", async () => {
     const run = await runCli(["run", "example task", "--approve"]);
 
-    expect(run.code).toBe(0);
-    expect(run.stdout).toContain("task execution interface ready");
+    expect(run.code).toBe(64);
+    expect(run.stderr).toContain("not implemented in the TypeScript runtime yet");
+    expect(run.stderr).toContain("run orchestration workstream");
+  });
+
+  it("returns structured JSON for CLI errors", async () => {
+    const run = await runCli(["unknown", "--json"]);
+
+    expect(run.code).toBe(2);
+    expect(run.stdout).toBe("");
+    const payload = JSON.parse(run.stderr);
+    expect(payload).toMatchObject({
+      ok: false,
+      exitCode: 2,
+      error: {
+        code: "UNKNOWN_COMMAND",
+        message: "Unknown command: unknown"
+      }
+    });
+  });
+
+  it("keeps unknown command errors human-readable when --format is absent", async () => {
+    const run = await runCli(["json"]);
+
+    expect(run.code).toBe(2);
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toContain("[apolo] error: Unknown command: json");
+    expect(() => JSON.parse(run.stderr)).toThrow();
+  });
+
+  it("returns structured not-implemented errors for workstream-owned commands", async () => {
+    const run = await runCli(["plan", "--task", "Add a feature", "--format", "json"]);
+
+    expect(run.code).toBe(64);
+    const payload = JSON.parse(run.stderr);
+    expect(payload).toMatchObject({
+      ok: false,
+      exitCode: 64,
+      error: {
+        code: "NOT_IMPLEMENTED"
+      }
+    });
   });
 });
 

@@ -48,16 +48,33 @@ APOLO organizes reliable agent work around five subsystems:
 | Scope | Limit work to an approved plan, max 5 agents, explicit write scopes, and bounded diffs. |
 | Session lifecycle | Start from known state, request approval, execute, verify, record memory, and leave clean handoff state. |
 
-## TypeScript/Node product boundary
+## TypeScript core runtime and optional Python boundary
 
-The 1.0 product path keeps the public CLI surface and mandatory runtime in TypeScript/Node.js so npm global installation works consistently. Python code in this repository is optional legacy/reference material and must not be required to install, start, or use the product CLI.
+APOLO 1.0 keeps the public CLI and core runtime in TypeScript/Node.js so npm global installation works consistently without a Python runtime.
 
-The boundary is:
+The TypeScript core owns:
 
-1. TypeScript owns argument parsing, command UX, config loading, package bin wiring, product contracts, and stable schemas.
-2. Product artifacts are explicit JSON or JSONL objects validated against versioned schemas.
-3. Optional helper runtimes may only sit behind stable JSON contracts and must not silently mutate the workspace.
-4. No helper runtime may bypass a TypeScript-layer approval record.
+- command service boundaries
+- structured errors and deterministic exit codes
+- text/JSON output contracts
+- timeout and cancellation helpers
+- reusable command result types
+- config and filesystem path resolution
+
+Python code can optionally support:
+
+- integration harnesses
+- model or tool adapters that already exist in Python ecosystems
+- deterministic fixture validation
+- optional workers invoked through stable command or RPC boundaries
+
+The boundary should remain narrow:
+
+1. TypeScript owns argument parsing, command UX, config loading, package bin wiring, runtime contracts, and command services.
+2. Python helpers should accept explicit JSON input and emit explicit JSON output.
+3. Shared schemas should be versioned and tested with fixtures.
+4. No Python helper should silently mutate the workspace without an approval record from the CLI layer.
+5. Missing Python must never block `apolo doctor`, global npm installation, or TypeScript-owned commands.
 
 ## Approval model
 
@@ -98,7 +115,6 @@ The MVP implementation is split across focused modules:
 | Area | Main paths |
 | --- | --- |
 | CLI core | `src/cli/`, `src/config/`, `src/fs/`, `src/index.ts` |
-| Product contracts | `src/contracts/`, `docs/product-contracts.md`, `test/fixtures/contracts/` |
 | Planning | `src/plan/` integration seam, `.apolo/plans/` artifacts |
 | Agent adapters and routing | `src/agents/`, `src/routing/` |
 | Repository initialization | `src/init/`, `src/templates/` |

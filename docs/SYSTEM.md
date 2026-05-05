@@ -105,9 +105,9 @@ Each run follows a lifecycle:
 
 The run ledger records lifecycle events so execution can be audited later.
 
-## TypeScript/Node product boundary
+## TypeScript runtime and optional Python split
 
-APOLO-CLI 1.0 uses TypeScript/Node.js for the public npm-installed product path. Python code in this repository is optional legacy/reference code only and is not a required runtime for installing, starting, or using the product CLI.
+APOLO uses TypeScript/Node.js for the public CLI and core runtime. Python-backed helpers are optional integration seams, not a requirement for npm-global installation or TypeScript-owned commands.
 
 ### TypeScript owns
 
@@ -118,7 +118,10 @@ APOLO-CLI 1.0 uses TypeScript/Node.js for the public npm-installed product path.
 - config loading
 - filesystem layout helpers
 - manifest defaults
-- product contracts and stable schemas
+- command service boundaries
+- structured errors and JSON/text output
+- timeout and cancellation helpers
+- reusable command result contracts
 - package validation
 
 Key paths:
@@ -128,12 +131,9 @@ src/index.ts
 src/cli/
 src/config/
 src/fs/
-src/contracts/
 ```
 
-### Legacy/reference Python areas
-
-These modules can inform future ports or optional adapters, but they do not define the mandatory 1.0 runtime:
+### Python owns
 
 - repository scanning
 - harness generation
@@ -156,7 +156,7 @@ src/verification/
 src/git/
 ```
 
-The boundary stays explicit: product artifacts are versioned JSON or JSONL contracts owned by TypeScript. Any optional helper runtime must receive structured input, return structured output, and operate behind the TypeScript approval layer.
+The boundary should stay explicit: Python helpers should receive structured input and return structured output. The TypeScript layer should remain the stable user interface.
 
 ## Workspace and global layout
 
