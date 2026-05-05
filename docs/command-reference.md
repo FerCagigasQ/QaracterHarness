@@ -45,9 +45,6 @@ apolo doctor
 Recommended checks:
 
 - Node.js version supports the package
-- npm is available for the primary global install workflow
-- Git is available for repository workflows
-- Python is reported only as an optional runtime when detected
 - Ollama is reachable when local Qwen workflows are enabled
 - workspace config is valid
 - agent count is 5 or fewer
@@ -106,13 +103,15 @@ Manages local memory entries.
 
 ```bash
 apolo memory list
-apolo memory add --from .apolo/runs/run-001/summary.json
-apolo memory prune --dry-run
+apolo memory search storage
+apolo memory show <id>
+apolo memory add --title "Decision" --body "Use local JSONL storage" --type decision --tag storage
+apolo memory export --format markdown
 ```
 
 Expected behavior:
 
-- list, add, update, and prune user-approved memory
+- list, search, show, add, and export user-approved memory
 - preserve source metadata and timestamps
 - avoid storing secrets or private credentials
 - require approval before write operations

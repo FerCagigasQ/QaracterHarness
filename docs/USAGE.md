@@ -12,7 +12,6 @@ Minimum:
 
 Recommended:
 
-- Python 3.11+ for legacy/fixture harness tests and optional Python-backed integrations
 - Ollama for local Qwen workflows
 - at least one supported coding-agent CLI installed locally
 
@@ -256,7 +255,7 @@ Use it when:
 
 Memory principles:
 
-- SQLite local storage
+- JSONL local storage
 - global and repository namespaces
 - source metadata preserved
 - sensitive content blocked or redacted

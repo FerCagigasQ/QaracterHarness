@@ -71,7 +71,7 @@ Default workspace state lives under `.apolo/`.
 APOLO treats verification as a first-class step. The verification subsystem detects common commands from the repository:
 
 - Node: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test`
-- Python: `python -m unittest discover`
+- Python target repositories: `python -m ruff check .`, `python -m mypy .`, `python -m pytest`, or `python -m unittest discover`
 - Make: `make lint`, `make typecheck`, `make build`, `make test`
 
 Verification results are structured. A failed command should be reported as evidence, not hidden behind a successful-looking summary.
@@ -133,13 +133,13 @@ src/config/
 src/fs/
 ```
 
-### Python owns
+### TypeScript foundations
 
 - repository scanning
 - harness generation
 - agent adapter definitions
 - security gate engine
-- SQLite memory store
+- JSONL memory store
 - run orchestration seams
 - verification command detection
 - Git/PR metadata helpers
@@ -156,7 +156,7 @@ src/verification/
 src/git/
 ```
 
-The boundary should stay explicit: Python helpers should receive structured input and return structured output. The TypeScript layer should remain the stable user interface.
+The npm runtime should stay TypeScript/Node-first. Python can be detected and executed as a target repository stack, but APOLO itself should not require Python to run.
 
 ## Workspace and global layout
 
@@ -194,7 +194,7 @@ Set `APOLO_HOME` to override the global location, especially in tests or isolate
 
 ## Memory system
 
-The memory subsystem is local-first and SQLite-backed.
+The memory subsystem is local-first and JSONL-backed through a narrow storage abstraction.
 
 Default namespaces:
 

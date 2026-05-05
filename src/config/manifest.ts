@@ -4,7 +4,7 @@ export const MANIFEST_SCHEMA_VERSION = 1;
 
 export type CoordinatorProvider = "claude";
 export type ApprovalPolicy = "always";
-export type MemoryDriver = "sqlite";
+export type MemoryDriver = "jsonl";
 export type InitMode = "pull-request";
 export type RuntimeBackend = "typescript";
 

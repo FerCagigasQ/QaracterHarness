@@ -3,14 +3,7 @@ import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
 import { createDefaultManifest } from "../config/defaults.js";
 import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
-import { detectAgents } from "../agents/detection.js";
-import {
-  RoutingError,
-  parseTaskCapability,
-  routeAgents,
-  type RoutingDecision
-} from "../agents/routing.js";
-import { MAX_AGENTS_PER_TASK, type AgentId, type TaskCapability } from "../agents/catalog.js";
+import { runMemoryCommand } from "../memory/cli.js";
 
 export interface Command {
   readonly name: string;
@@ -52,9 +45,9 @@ export const commands: readonly Command[] = [
   },
   {
     name: "memory",
-    summary: "Inspect local SQLite memory locations.",
-    usage: "apolo memory",
-    run: runMemory
+    summary: "Inspect and manage local APOLO memory.",
+    usage: "apolo memory <list|search|show|add|export>",
+    run: runMemoryCommand
   },
   {
     name: "agents",
@@ -158,10 +151,6 @@ async function runTask(args: readonly string[], context: CliContext): Promise<Co
   }
 
   return new RunCommandService().execute({ args }, context);
-}
-
-async function runSync(args: readonly string[], context: CliContext): Promise<CommandResult> {
-  return new SyncCommandService().execute({ args }, context);
 }
 
 async function runAgents(args: readonly string[], context: CliContext): Promise<number> {

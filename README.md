@@ -18,10 +18,9 @@ The CLI hides most orchestration details behind sensible defaults: Claude as coo
 This repository contains the APOLO-CLI MVP foundation:
 
 - npm package and global `apolo` binary contract
-- TypeScript/Node.js CLI entrypoint, command router, and core runtime foundation
-- TypeScript-owned product contracts for command outputs, artifacts, ledgers, memory records, security events, and agent capabilities
-- Python subsystems for optional integration harnesses and legacy implementation seams
-- local/global memory schema using SQLite
+- TypeScript CLI entrypoint and command router
+- TypeScript foundations for memory, security gates, redaction, and verification
+- local/global memory storage using JSONL with a storage abstraction for future SQLite support
 - generic documentation, examples, packaging checks, and cross-platform CI
 
 The core contract is in place, but the public TypeScript router still exposes some provider workflows as integration seams or stubs. Treat the current package as an MVP foundation, not a fully polished production agent runner.
@@ -47,7 +46,6 @@ node dist/index.js --help
 Requirements:
 
 - Node.js 20+
-- npm for the primary global install workflow
 - Git for repository workflows
 - Optional: Python 3.11+ for legacy/fixture harness tests and optional Python-backed integrations
 - Optional: Ollama with a Qwen model for local analysis
@@ -120,7 +118,7 @@ Execution must be based on an approved plan. APOLO enforces human approval befor
 | Agent limit | max 5 agents per task |
 | Approval mode | human approval always required |
 | PR providers | Claude or Codex |
-| Memory | SQLite, local-first, global + repository namespaces |
+| Memory | JSONL, local-first, global + repository namespaces |
 | Supported OS | Windows, macOS, Linux |
 
 ## Supported agent adapters
@@ -164,14 +162,13 @@ packaging/            npm packaging and binary smoke validation
 src/cli/              TypeScript CLI entrypoint, routing, logging, errors
 src/config/           Defaults, config loading, manifest model
 src/fs/               Filesystem layout helpers
-src/contracts/        TypeScript product contracts and stable schema definitions
-src/init/             Legacy/reference repository scanner and harness generator
-src/agents/           Legacy/reference agent capability model, detection, adapters, execution
-src/memory/           Legacy/reference SQLite memory store, markdown export, redaction
-src/security/         Legacy/reference policy gates and sensitive data checks
-src/run/              Legacy/reference approved-plan execution orchestration
-src/verification/     Legacy/reference verification command detection and execution
-src/git/              Legacy/reference branch and PR draft helpers
+src/init/             Repository scanner and harness generator
+src/agents/           Agent capability model, detection, adapters, execution
+src/memory/           JSONL memory store, CLI commands, export, redaction
+src/security/         TypeScript policy gates and sensitive data checks
+src/run/              Approved-plan execution orchestration
+src/verification/     Verification command detection and execution
+src/git/              Branch and PR draft helpers
 test/                 CLI, integration, fixture, and harness tests
 ```
 
@@ -183,17 +180,6 @@ npm run lint
 npm run typecheck
 npm test
 npm run test:integration
-```
-
-Optional legacy/reference validation:
-
-```bash
-npm run test:python
-```
-
-Packaging validation:
-
-```bash
 npm run package:check
 npm run smoke:bin
 ```

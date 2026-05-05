@@ -33,7 +33,7 @@ export function createDefaultManifest(cwd: string, env: Env): ApoloManifest {
       directMain: false
     },
     memory: {
-      driver: "sqlite",
+      driver: "jsonl",
       globalPath: paths.globalMemoryDb,
       repoPath: paths.repoMemoryDb
     }
