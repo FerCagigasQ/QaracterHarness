@@ -91,6 +91,30 @@ class SecurityGateEngineTest(unittest.TestCase):
 
         self.assertTrue(_has_block(decisions, "write_scope"))
 
+    def test_blocks_denied_file_names_inside_allowed_directories(self) -> None:
+        request = PlanRequest(
+            actor="claude",
+            file_writes=(
+                FileWrite(path="src/.env", content="safe text"),
+                FileWrite(path="src/.env.production", content="safe text"),
+                FileWrite(path="tests/id_rsa", content="safe text"),
+                FileWrite(path="src/credentials", content="safe text"),
+            ),
+            approvals=ApprovalContext(human_run_approved=True),
+        )
+
+        decisions = SecurityGateEngine().evaluate(request)
+
+        blocked_paths = {
+            decision.metadata["path"]
+            for decision in decisions
+            if decision.gate == "write_scope" and not decision.allowed
+        }
+        self.assertEqual(
+            blocked_paths,
+            {"src/.env", "src/.env.production", "tests/id_rsa", "src/credentials"},
+        )
+
     def test_blocks_memory_write_over_limit(self) -> None:
         request = PlanRequest(
             actor="claude",

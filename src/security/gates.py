@@ -196,8 +196,8 @@ class SecurityGateEngine:
         decisions: list[GateDecision] = []
         for file_write in request.file_writes:
             normalized = _normalize_relative_path(file_write.path)
-            denied = _matches_any(normalized, policy.denied_paths)
-            allowed = _matches_any(normalized, policy.allowed_paths)
+            denied = _matches_any_denied(normalized, policy.denied_paths)
+            allowed = _matches_any_allowed(normalized, policy.allowed_paths)
             if denied or not allowed:
                 decisions.append(
                     GateDecision(
@@ -340,11 +340,28 @@ def _normalize_relative_path(path: str) -> str:
     return "/".join(parts)
 
 
-def _matches_any(path: str, candidates: tuple[str, ...]) -> bool:
-    return any(_matches_path(path, candidate) for candidate in candidates)
+def _matches_any_allowed(path: str, candidates: tuple[str, ...]) -> bool:
+    return any(_matches_allowed_path(path, candidate) for candidate in candidates)
 
 
-def _matches_path(path: str, candidate: str) -> bool:
+def _matches_any_denied(path: str, candidates: tuple[str, ...]) -> bool:
+    return any(_matches_denied_path(path, candidate) for candidate in candidates)
+
+
+def _matches_allowed_path(path: str, candidate: str) -> bool:
     if candidate.endswith("/"):
         return path == candidate[:-1] or path.startswith(candidate)
     return path == candidate or path.startswith(f"{candidate}/")
+
+
+def _matches_denied_path(path: str, candidate: str) -> bool:
+    if _matches_allowed_path(path, candidate):
+        return True
+    normalized_candidate = candidate.strip("/")
+    if not normalized_candidate:
+        return False
+    return (
+        path.endswith(f"/{normalized_candidate}")
+        or f"/{normalized_candidate}/" in path
+        or f"/{normalized_candidate}" in path
+    )
