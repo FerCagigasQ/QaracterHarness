@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "workspaceName": "generic-apolo-workspace",
+  "defaults": {
+    "coordinator": "claude",
+    "localModel": {
+      "provider": "ollama",
+      "model": "qwen"
+    },
+    "maxAgents": 5,
+    "humanApproval": "always"
+  },
+  "agents": [
+    {
+      "name": "planner",
+      "role": "planning",
+      "model": "claude",
+      "requiresApproval": true
+    },
+    {
+      "name": "local-reviewer",
+      "role": "review",
+      "model": "qwen",
+      "provider": "ollama",
+      "requiresApproval": true
+    }
+  ],
+  "paths": {
+    "plans": ".apolo/plans",
+    "runs": ".apolo/runs",
+    "memory": ".apolo/memory",
+    "sync": ".apolo/sync"
+  }
+}

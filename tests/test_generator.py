@@ -58,6 +58,19 @@ class GeneratorTests(unittest.TestCase):
             self.assertTrue(init_file.exists())
             self.assertTrue(init_file.stat().st_mode & 0o111)
 
+    def test_empty_command_lists_are_indented_for_all_yaml_templates(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            scan = scan_repo(root)
+            detection = detect_stack(scan)
+            plan = build_harness_plan(scan, detection, build_handoff_summary(root, detection))
+
+        apolo_yaml = next(file.content for file in plan.files if file.relative_path == "apolo.yaml")
+        gates_yaml = next(file.content for file in plan.files if file.relative_path == ".apolo/gates.yaml")
+
+        self.assertIn("  lint:\n    []", apolo_yaml)
+        self.assertIn("    commands:\n      []", gates_yaml)
+
     def test_dry_run_reports_creates(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)

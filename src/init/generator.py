@@ -127,9 +127,12 @@ def _template_variables(
         "frameworks": _csv(detection.frameworks),
         "package_managers": _csv(detection.package_managers),
         "ci_providers": _csv(detection.ci_providers),
-        "test_commands_yaml": _yaml_list(detection.test_commands),
-        "lint_commands_yaml": _yaml_list(detection.lint_commands),
-        "build_commands_yaml": _yaml_list(detection.build_commands),
+        "test_commands_yaml": _yaml_list(detection.test_commands, indent=4),
+        "lint_commands_yaml": _yaml_list(detection.lint_commands, indent=4),
+        "build_commands_yaml": _yaml_list(detection.build_commands, indent=4),
+        "test_commands_gates_yaml": _yaml_list(detection.test_commands, indent=6),
+        "lint_commands_gates_yaml": _yaml_list(detection.lint_commands, indent=6),
+        "build_commands_gates_yaml": _yaml_list(detection.build_commands, indent=6),
         "test_commands_md": _md_list(detection.test_commands),
         "lint_commands_md": _md_list(detection.lint_commands),
         "build_commands_md": _md_list(detection.build_commands),
@@ -159,10 +162,11 @@ def _csv(values: list[str]) -> str:
     return ", ".join(values) if values else "unknown"
 
 
-def _yaml_list(values: list[str]) -> str:
+def _yaml_list(values: list[str], indent: int) -> str:
+    prefix = " " * indent
     if not values:
-        return "    []"
-    return "\n".join(f"    - {json.dumps(value)}" for value in values)
+        return f"{prefix}[]"
+    return "\n".join(f"{prefix}- {json.dumps(value)}" for value in values)
 
 
 def _md_list(values: list[str]) -> str:

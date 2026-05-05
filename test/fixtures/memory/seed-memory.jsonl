@@ -1,0 +1,2 @@
+{"id":"mem-001","kind":"decision","text":"Human approval is required before execution.","source":"fixture","createdAt":"2026-01-01T00:00:00.000Z"}
+{"id":"mem-002","kind":"preference","text":"Prefer dry-run before applying workspace changes.","source":"fixture","createdAt":"2026-01-01T00:00:00.000Z"}
