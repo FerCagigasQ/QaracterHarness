@@ -4,6 +4,9 @@ import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
 import { createDefaultManifest } from "../config/defaults.js";
 import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { runSummaryForOutput } from "../run/memory.js";
+import { runFromPlan } from "../run/orchestrator.js";
+import type { ApprovalSource, PrProvider, RunMode } from "../run/types.js";
 
 export interface Command {
   readonly name: string;
@@ -34,7 +37,7 @@ export const commands: readonly Command[] = [
   {
     name: "run",
     summary: "Run an approved task.",
-    usage: "apolo run <task> --approve",
+    usage: "apolo run --from-plan <path> --approve [--dry-run|--execute] [--fake-agent]",
     run: runTask
   },
   {
@@ -144,16 +147,48 @@ async function runDoctor(args: readonly string[], context: CliContext): Promise<
 }
 
 async function runTask(args: readonly string[], context: CliContext): Promise<number> {
-  const approved = await requestHumanApproval(args, context);
+  const parsed = parseRunArgs(args);
 
-  if (!approved) {
+  if (!parsed.fromPlan && !parsed.resumeRunId) {
+    const approved = await requestHumanApproval(args, context);
+
+    if (!approved.approved) {
+      throw new ApoloError("apolo run requires explicit human approval before execution.", {
+        exitCode: 2,
+        hint: "Pass --approve after reviewing the task, or type approve when prompted."
+      });
+    }
+
+    await writeStub(context, "run", "task execution");
+    return 0;
+  }
+
+  const approved = await requestHumanApproval(args, context);
+  const summary = await runFromPlan({
+    cwd: context.cwd,
+    env: context.env,
+    approved: approved.approved,
+    approvalSource: approved.source,
+    mode: parsed.mode,
+    fakeAgent: parsed.fakeAgent,
+    ...(parsed.fromPlan === undefined ? {} : { planPath: parsed.fromPlan }),
+    ...(parsed.resumeRunId === undefined ? {} : { resumeRunId: parsed.resumeRunId }),
+    ...(parsed.provider === undefined ? {} : { provider: parsed.provider })
+  });
+
+  context.stdout.write(runSummaryForOutput(summary));
+
+  if (summary.state === "approval_required") {
     throw new ApoloError("apolo run requires explicit human approval before execution.", {
       exitCode: 2,
-      hint: "Pass --approve after reviewing the task, or type approve when prompted."
+      hint: "Pass --approve after reviewing the plan, or type approve when prompted."
     });
   }
 
-  await writeStub(context, "run", "task execution");
+  if (summary.state === "failed" || summary.state === "verification_failed") {
+    return 1;
+  }
+
   return 0;
 }
 
@@ -183,18 +218,96 @@ async function writeStub(context: CliContext, command: string, capability: strin
   return 0;
 }
 
-async function requestHumanApproval(args: readonly string[], context: CliContext): Promise<boolean> {
+interface ParsedRunArgs {
+  readonly fromPlan?: string;
+  readonly resumeRunId?: string;
+  readonly mode: RunMode;
+  readonly provider?: PrProvider;
+  readonly fakeAgent: boolean;
+}
+
+function parseRunArgs(args: readonly string[]): ParsedRunArgs {
+  let fromPlan: string | undefined;
+  let resumeRunId: string | undefined;
+  let mode: RunMode = "dry_run";
+  let provider: PrProvider | undefined;
+  let fakeAgent = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--from-plan") {
+      fromPlan = readFlagValue(args, index, "--from-plan");
+      index += 1;
+      continue;
+    }
+    if (arg === "--resume") {
+      resumeRunId = readFlagValue(args, index, "--resume");
+      index += 1;
+      continue;
+    }
+    if (arg === "--dry-run") {
+      mode = "dry_run";
+      continue;
+    }
+    if (arg === "--execute") {
+      mode = "execute";
+      continue;
+    }
+    if (arg === "--fake-agent") {
+      fakeAgent = true;
+      continue;
+    }
+    if (arg === "--provider") {
+      const value = readFlagValue(args, index, "--provider");
+      if (value !== "claude" && value !== "codex") {
+        throw new ApoloError(`Unsupported PR provider: ${value}`, {
+          exitCode: 2,
+          hint: "Use --provider claude or --provider codex."
+        });
+      }
+      provider = value;
+      index += 1;
+      continue;
+    }
+  }
+
+  const parsed: ParsedRunArgs = { mode, fakeAgent };
+  return {
+    ...parsed,
+    ...(fromPlan === undefined ? {} : { fromPlan }),
+    ...(resumeRunId === undefined ? {} : { resumeRunId }),
+    ...(provider === undefined ? {} : { provider })
+  };
+}
+
+function readFlagValue(args: readonly string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith("--")) {
+    throw new ApoloError(`${flag} requires a value.`, {
+      exitCode: 2,
+      hint: "Run `apolo run --help` for usage."
+    });
+  }
+  return value;
+}
+
+async function requestHumanApproval(
+  args: readonly string[],
+  context: CliContext
+): Promise<{ readonly approved: boolean; readonly source: ApprovalSource }> {
   if (args.includes("--approve")) {
     context.logger.info("Human approval recorded from --approve.");
-    return true;
+    return { approved: true, source: "flag" };
   }
 
   if (!context.isInteractive) {
-    return false;
+    return { approved: false, source: "none" };
   }
 
   const answer = await context.readLine("Type approve to run: ");
-  return answer.trim().toLowerCase() === "approve";
+  return answer.trim().toLowerCase() === "approve"
+    ? { approved: true, source: "prompt" }
+    : { approved: false, source: "none" };
 }
 
 function rejectUnexpectedArgs(command: string, args: readonly string[]): void {

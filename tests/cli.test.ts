@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -69,6 +69,40 @@ describe("apolo cli", () => {
 
     expect(run.code).toBe(0);
     expect(run.stdout).toContain("task execution interface ready");
+  });
+
+  it("runs an approved JSON plan through the fake agent adapter", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+    const planPath = join(cwd, "plan.json");
+    await writeFile(
+      planPath,
+      `${JSON.stringify({
+        version: 1,
+        id: "cli-plan",
+        title: "CLI plan",
+        objective: "Exercise CLI run",
+        approvalRequired: true,
+        approved: true,
+        maxParallelAgents: 1,
+        steps: [
+          {
+            id: "step-001",
+            agent: "planner",
+            action: "inspect",
+            sideEffects: true
+          }
+        ],
+        verifications: []
+      })}\n`,
+      "utf8"
+    );
+
+    const run = await runCli(["run", "--from-plan", planPath, "--fake-agent"], cwd, home);
+
+    expect(run.code).toBe(0);
+    expect(run.stdout).toContain("APOLO run state: completed");
+    expect(run.stdout).toContain("ledger:");
   });
 });
 
