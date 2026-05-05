@@ -1,4 +1,4 @@
-import { access } from "node:fs/promises";
+import { access, constants } from "node:fs/promises";
 import { delimiter, isAbsolute, join } from "node:path";
 import { spawn } from "node:child_process";
 import { AGENT_PROVIDERS, type AgentCapabilities, type AgentId, type AgentProvider } from "./catalog.js";
@@ -102,7 +102,7 @@ async function which(executable: string, env: Env): Promise<string | null> {
 
 async function isExecutable(path: string): Promise<boolean> {
   try {
-    await access(path);
+    await access(path, process.platform === "win32" ? constants.F_OK : constants.X_OK);
     return true;
   } catch {
     return false;
@@ -159,9 +159,20 @@ function runCommand(
 
     let stdout = "";
     let stderr = "";
+    let settled = false;
+
+    function settle(result: CommandResult | null): void {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    }
+
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
-      resolve(null);
+      settle(null);
     }, timeoutMs);
 
     child.stdout.setEncoding("utf8");
@@ -173,12 +184,10 @@ function runCommand(
       stderr += chunk;
     });
     child.on("error", () => {
-      clearTimeout(timer);
-      resolve(null);
+      settle(null);
     });
     child.on("close", (exitCode) => {
-      clearTimeout(timer);
-      resolve({ exitCode, stdout, stderr });
+      settle({ exitCode, stdout, stderr });
     });
   });
 }
