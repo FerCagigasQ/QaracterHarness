@@ -2,6 +2,8 @@
 
 APOLO CLI is designed as a small terminal entrypoint with explicit boundaries between orchestration, model adapters, approval policy, memory, and synchronization.
 
+For a more complete explanation of the internal system, see [`SYSTEM.md`](SYSTEM.md).
+
 ## High-level components
 
 ```text
@@ -33,6 +35,18 @@ apolo CLI command router
 | Memory store | Store user-approved local notes, task summaries, decisions, and reusable context. |
 | Sync adapter | Synchronize approved state with a remote endpoint or local mirror without bypassing approval policy. |
 | Execution runner | Execute approved plans, stream logs, capture artifacts, and return deterministic exit codes. |
+
+## Harness model
+
+APOLO organizes reliable agent work around five subsystems:
+
+| Subsystem | APOLO responsibility |
+| --- | --- |
+| Instructions | Generate and maintain concise agent-readable instructions, startup commands, and quality rules. |
+| State | Persist plans, run ledgers, handoffs, progress, and memory so sessions are resumable. |
+| Verification | Detect and run repository checks, then record evidence instead of relying on optimistic summaries. |
+| Scope | Limit work to an approved plan, max 5 agents, explicit write scopes, and bounded diffs. |
+| Session lifecycle | Start from known state, request approval, execute, verify, record memory, and leave clean handoff state. |
 
 ## TypeScript and Python boundary
 
@@ -83,3 +97,31 @@ Recommended default workspace paths:
 ```
 
 All paths should be overridable for tests through command flags or environment variables.
+
+## Workstream module map
+
+The MVP implementation is split across focused modules:
+
+| Area | Main paths |
+| --- | --- |
+| CLI core | `src/cli/`, `src/config/`, `src/fs/`, `src/index.ts` |
+| Planning | `src/plan/` integration seam, `.apolo/plans/` artifacts |
+| Agent adapters and routing | `src/agents/`, `src/routing/` |
+| Repository initialization | `src/init/`, `src/templates/` |
+| Memory | `src/memory/`, `migrations/001_memory_schema.sql` |
+| Security | `src/security/`, `src/policy/` |
+| Run and verification | `src/run/`, `src/verification/`, `src/git/` |
+| QA and packaging | `tests/`, `test/`, `packaging/`, `.github/workflows/` |
+
+## Interface contracts
+
+Subsystems communicate through narrow contracts rather than direct provider coupling:
+
+- command specs for agent subprocess invocation
+- plan artifacts for plan-to-run handoff
+- policy requests for security gate evaluation
+- verification result objects for checks
+- memory records for durable context
+- PR draft objects for provider-specific PR submission
+
+This allows the CLI to stay simple while provider implementations evolve behind stable boundaries.
