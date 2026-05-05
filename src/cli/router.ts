@@ -1,61 +1,65 @@
 import { ApoloError } from "./errors.js";
 import type { CliContext } from "./context.js";
+import { commandOk, type CommandResult } from "../core/results.js";
+import { DoctorCommandService } from "./services/doctor.js";
 import { loadConfig } from "../config/loader.js";
-import { createDefaultManifest } from "../config/defaults.js";
-import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
-import { runSummaryForOutput } from "../run/memory.js";
+import { resolveApoloPaths } from "../fs/layout.js";
+import { parseInitOptions, runApoloInit, formatInitResult } from "../init/workspace.js";
+import { runPlan } from "../planning/cli.js";
+import { runMemoryCommand } from "../memory/cli.js";
+import { detectAgents } from "../agents/detection.js";
+import {
+  routeAgents,
+  RoutingError,
+  parseTaskCapability,
+  type RoutingDecision
+} from "../agents/routing.js";
+import { MAX_AGENTS_PER_TASK, type TaskCapability } from "../agents/catalog.js";
 import { runFromPlan } from "../run/orchestrator.js";
+import { runSummaryForOutput } from "../run/memory.js";
 import type { ApprovalSource, PrProvider, RunMode } from "../run/types.js";
 
-export interface Command {
+interface CommandEntry {
   readonly name: string;
   readonly summary: string;
   readonly usage: string;
-  readonly run: (args: readonly string[], context: CliContext) => Promise<CommandResult>;
 }
 
-export const commands: readonly Command[] = [
+export const commands: readonly CommandEntry[] = [
   {
     name: "init",
     summary: "Create or update generic APOLO harness artifacts.",
-    usage: "apolo init [--dry-run] [--format json|text] [--force]",
-    run: runInit
+    usage: "apolo init [--dry-run] [--format json|text] [--force]"
   },
   {
     name: "doctor",
     summary: "Inspect local CLI configuration and defaults.",
-    usage: "apolo doctor",
-    run: runDoctor
+    usage: "apolo doctor"
   },
   {
     name: "plan",
     summary: "Plan a task before execution.",
-    usage: "apolo plan --task \"...\" [--dry-run] [--format json]",
-    run: runPlan
+    usage: "apolo plan --task \"...\" [--dry-run] [--format json]"
   },
   {
     name: "run",
     summary: "Run an approved task.",
-    usage: "apolo run --from-plan <path> --approve [--dry-run|--execute] [--fake-agent]",
-    run: runTask
+    usage: "apolo run --from-plan <path> --approve [--dry-run|--execute] [--fake-agent]"
   },
   {
     name: "sync",
     summary: "Synchronize local state with repository metadata.",
-    usage: "apolo sync",
-    run: runSync
+    usage: "apolo sync"
   },
   {
     name: "memory",
     summary: "Inspect and manage local APOLO memory.",
-    usage: "apolo memory <list|search|show|add|export>",
-    run: runMemoryCommand
+    usage: "apolo memory <list|search|show|add|export>"
   },
   {
     name: "agents",
     summary: "List detected local agent CLIs and route tasks.",
-    usage: "apolo agents [--json] [--route <task>] [--task <kind>] [--require-pr]",
-    run: runAgents
+    usage: "apolo agents [--json] [--route <task>] [--task <kind>] [--require-pr]"
   }
 ];
 
@@ -63,15 +67,10 @@ export async function dispatch(args: readonly string[], context: CliContext): Pr
   const [commandName, ...commandArgs] = args;
 
   if (!commandName || commandName === "help" || commandName === "--help" || commandName === "-h") {
-    return {
-      ok: true,
-      command: "help",
-      exitCode: 0,
+    return commandOk("help", {
       message: formatHelp().trimEnd(),
-      data: {
-        commands: commands.map((command) => command.name)
-      }
-    };
+      data: { commands: commands.map((c) => c.name) }
+    });
   }
 
   const command = commands.find((entry) => entry.name === commandName);
@@ -85,11 +84,32 @@ export async function dispatch(args: readonly string[], context: CliContext): Pr
   }
 
   if (commandArgs.includes("--help") || commandArgs.includes("-h")) {
-    context.stdout.write(`${command.usage}\n\n${command.summary}\n${formatCommandOptions(command.name)}`);
-    return 0;
+    return commandOk(command.name, {
+      message: `${command.usage}\n\n${command.summary}${formatCommandOptions(command.name)}`
+    });
   }
 
-  return command.run(commandArgs, context);
+  switch (command.name) {
+    case "init":
+      return runInit(commandArgs, context);
+    case "doctor":
+      return runDoctor(commandArgs, context);
+    case "plan":
+      return runPlanCommand(commandArgs, context);
+    case "run":
+      return runTask(commandArgs, context);
+    case "sync":
+      return runSync(commandArgs, context);
+    case "memory":
+      return runMemory(commandArgs, context);
+    case "agents":
+      return runAgents(commandArgs, context);
+    default:
+      throw new ApoloError(`Command not implemented: ${command.name}`, {
+        code: "NOT_IMPLEMENTED",
+        exitCode: 64
+      });
+  }
 }
 
 export function formatHelp(): string {
@@ -116,7 +136,9 @@ export function formatHelp(): string {
   ].join("\n");
 }
 
-async function runInit(args: readonly string[], context: CliContext): Promise<number> {
+/* ── init ────────────────────────────────────────────────────────── */
+
+async function runInit(args: readonly string[], context: CliContext): Promise<CommandResult> {
   let options;
   try {
     options = parseInitOptions(args);
@@ -129,15 +151,55 @@ async function runInit(args: readonly string[], context: CliContext): Promise<nu
 
   const result = await runApoloInit(context.cwd, context.env, options);
   context.stdout.write(formatInitResult(result, options.format));
-  return result.summary.conflicts.length > 0 ? 1 : 0;
+
+  if (result.summary.conflicts.length > 0) {
+    throw new ApoloError("Init completed with unresolved conflicts.", {
+      exitCode: 1,
+      hint: "Re-run with --force to overwrite, or resolve manually."
+    });
+  }
+
+  return commandOk("init");
 }
+
+/* ── doctor ──────────────────────────────────────────────────────── */
 
 async function runDoctor(args: readonly string[], context: CliContext): Promise<CommandResult> {
   rejectUnexpectedArgs("doctor", args);
   return new DoctorCommandService().execute({ args }, context);
 }
 
-async function runTask(args: readonly string[], context: CliContext): Promise<number> {
+/* ── plan ────────────────────────────────────────────────────────── */
+
+async function runPlanCommand(args: readonly string[], context: CliContext): Promise<CommandResult> {
+  const planArgs = context.outputFormat === "json" && !hasFormatArg(args) ? [...args, "--format", "json"] : args;
+  if (context.outputFormat === "json") {
+    let stdout = "";
+    const exitCode = await runPlan(planArgs, {
+      ...context,
+      outputFormat: "json",
+      stdout: {
+        write: (chunk) => {
+          stdout += chunk;
+        }
+      }
+    });
+    if (exitCode !== 0) {
+      throw new ApoloError("Plan command failed.", { exitCode });
+    }
+    return commandOk("plan", { data: JSON.parse(stdout) });
+  }
+
+  const exitCode = await runPlan(planArgs, context);
+  if (exitCode !== 0) {
+    throw new ApoloError("Plan command failed.", { exitCode });
+  }
+  return commandOk("plan");
+}
+
+/* ── run ─────────────────────────────────────────────────────────── */
+
+async function runTask(args: readonly string[], context: CliContext): Promise<CommandResult> {
   const parsed = parseRunArgs(args);
 
   if (!parsed.fromPlan && !parsed.resumeRunId) {
@@ -150,8 +212,11 @@ async function runTask(args: readonly string[], context: CliContext): Promise<nu
       });
     }
 
-    await writeStub(context, "run", "task execution");
-    return 0;
+    throw new ApoloError("apolo run requires --from-plan <path> or --resume <run-id>.", {
+      code: "INVALID_ARGUMENTS",
+      exitCode: 2,
+      hint: "Generate a plan first with `apolo plan --task \"...\"`."
+    });
   }
 
   const approved = await requestHumanApproval(args, context);
@@ -178,24 +243,35 @@ async function runTask(args: readonly string[], context: CliContext): Promise<nu
   }
 
   if (summary.state === "failed" || summary.state === "verification_failed") {
-    return 1;
+    throw new ApoloError(`Run ${summary.state}: check ledger at ${summary.ledgerPath}`, {
+      exitCode: 1
+    });
   }
 
-  return 0;
+  return commandOk("run");
 }
 
-async function runMemory(args: readonly string[], context: CliContext): Promise<number> {
-  rejectUnexpectedArgs("memory", args);
+/* ── sync ────────────────────────────────────────────────────────── */
 
-  const config = await loadConfig(context.cwd, context.env);
-  context.stdout.write("APOLO memory\n");
-  context.stdout.write(`driver: ${config.manifest.memory.driver}\n`);
-  context.stdout.write(`global: ${config.manifest.memory.globalPath}\n`);
-  context.stdout.write(`repo: ${config.manifest.memory.repoPath}\n`);
-  return 0;
+async function runSync(args: readonly string[], context: CliContext): Promise<CommandResult> {
+  rejectUnexpectedArgs("sync", args);
+  context.stdout.write("apolo sync: synchronization interface ready.\n");
+  return commandOk("sync");
 }
 
-async function runAgents(args: readonly string[], context: CliContext): Promise<number> {
+/* ── memory ──────────────────────────────────────────────────────── */
+
+async function runMemory(args: readonly string[], context: CliContext): Promise<CommandResult> {
+  const exitCode = await runMemoryCommand(args, context);
+  if (exitCode !== 0) {
+    throw new ApoloError("Memory command failed.", { exitCode });
+  }
+  return commandOk("memory");
+}
+
+/* ── agents ──────────────────────────────────────────────────────── */
+
+async function runAgents(args: readonly string[], context: CliContext): Promise<CommandResult> {
   const config = await loadConfig(context.cwd, context.env);
   const options = parseAgentsArgs(args);
   const agents = await detectAgents({ env: context.env });
@@ -226,7 +302,7 @@ async function runAgents(args: readonly string[], context: CliContext): Promise<
         2
       )}\n`
     );
-    return 0;
+    return commandOk("agents");
   }
 
   context.stdout.write("APOLO agents\n");
@@ -247,8 +323,10 @@ async function runAgents(args: readonly string[], context: CliContext): Promise<
   if (routing !== null) {
     writeRouting(routing, context);
   }
-  return 0;
+  return commandOk("agents");
 }
+
+/* ── helpers ─────────────────────────────────────────────────────── */
 
 interface AgentsOptions {
   readonly json: boolean;
@@ -324,11 +402,6 @@ function writeRouting(routing: RoutingDecision, context: CliContext): void {
   }
 }
 
-async function writeStub(context: CliContext, command: string, capability: string): Promise<number> {
-  context.stdout.write(`apolo ${command}: ${capability} interface ready; implementation pending.\n`);
-  return 0;
-}
-
 interface ParsedRunArgs {
   readonly fromPlan?: string;
   readonly resumeRunId?: string;
@@ -362,6 +435,9 @@ function parseRunArgs(args: readonly string[]): ParsedRunArgs {
     }
     if (arg === "--execute") {
       mode = "execute";
+      continue;
+    }
+    if (arg === "--approve") {
       continue;
     }
     if (arg === "--fake-agent") {
@@ -429,6 +505,10 @@ function rejectUnexpectedArgs(command: string, args: readonly string[]): void {
       hint: `Run \`apolo ${command} --help\` for usage.`
     });
   }
+}
+
+function hasFormatArg(args: readonly string[]): boolean {
+  return args.some((arg) => arg === "--json" || arg === "--format" || arg.startsWith("--format="));
 }
 
 function formatCommandOptions(command: string): string {

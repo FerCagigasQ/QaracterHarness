@@ -80,7 +80,7 @@ try {
   const env = { ...process.env, HOME: home, APOLO_HOME: join(home, ".apolo-global") };
 
   const init = run(apoloBin, ["init"], { cwd: project, env });
-  if (!init.includes("Initialized APOLO workspace")) {
+  if (!init.includes("APOLO init write")) {
     throw new Error(`Unexpected init output: ${init}`);
   }
 
@@ -101,9 +101,9 @@ try {
     throw new Error(`Unexpected unapproved run result: ${runDenied.status}\n${runDenied.stderr}`);
   }
 
-  const runApproved = run(apoloBin, ["run", "smoke task", "--approve"], { cwd: project, env });
-  if (!runApproved.includes("task execution interface ready")) {
-    throw new Error(`Unexpected approved run output: ${runApproved}`);
+  const runWithoutPlan = runExpectFailure(apoloBin, ["run", "smoke task", "--approve"], { cwd: project, env });
+  if (runWithoutPlan.status !== 2 || !runWithoutPlan.stderr.includes("requires --from-plan")) {
+    throw new Error(`Unexpected approved run without plan result: ${runWithoutPlan.status}\n${runWithoutPlan.stderr}`);
   }
 
   const unpack = join(temp, "unpack");

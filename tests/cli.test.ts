@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -98,12 +98,12 @@ describe("apolo cli", () => {
     expect(run.stderr).toContain("requires explicit human approval");
   });
 
-  it("returns explicit not-implemented for run business logic after approval", async () => {
+  it("requires a plan path or resume id after run approval", async () => {
     const run = await runCli(["run", "example task", "--approve"]);
 
-    expect(run.code).toBe(64);
-    expect(run.stderr).toContain("not implemented in the TypeScript runtime yet");
-    expect(run.stderr).toContain("run orchestration workstream");
+    expect(run.code).toBe(2);
+    expect(run.stderr).toContain("requires --from-plan");
+    expect(run.stderr).toContain("Generate a plan first");
   });
 
   it("returns structured JSON for CLI errors", async () => {
@@ -131,18 +131,14 @@ describe("apolo cli", () => {
     expect(() => JSON.parse(run.stderr)).toThrow();
   });
 
-  it("returns structured not-implemented errors for workstream-owned commands", async () => {
+  it("returns structured JSON for implemented plan command", async () => {
     const run = await runCli(["plan", "--task", "Add a feature", "--format", "json"]);
 
-    expect(run.code).toBe(64);
-    const payload = JSON.parse(run.stderr);
-    expect(payload).toMatchObject({
-      ok: false,
-      exitCode: 64,
-      error: {
-        code: "NOT_IMPLEMENTED"
-      }
-    });
+    expect(run.code).toBe(0);
+    expect(run.stderr).toBe("");
+    const payload = JSON.parse(run.stdout);
+    expect(payload.data.task).toBe("Add a feature");
+    expect(payload.data.plan.approvalCheckpoints.length).toBeGreaterThan(0);
   });
 
   it("writes a read-only plan artifact under .apolo/plans", async () => {
@@ -186,7 +182,7 @@ describe("apolo cli", () => {
     });
 
     expect(run.code).toBe(0);
-    const parsed = JSON.parse(run.stdout);
+    const parsed = JSON.parse(run.stdout).data;
     expect(parsed.task).toBe("Review CLI UX");
     expect(parsed.dryRun).toBe(true);
     expect(parsed.planner).toBe("deterministic-fallback");
