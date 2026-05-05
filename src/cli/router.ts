@@ -4,6 +4,7 @@ import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
 import { createDefaultManifest } from "../config/defaults.js";
 import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { runMemoryCommand } from "../memory/cli.js";
 
 export interface Command {
   readonly name: string;
@@ -45,9 +46,9 @@ export const commands: readonly Command[] = [
   },
   {
     name: "memory",
-    summary: "Inspect local SQLite memory locations.",
-    usage: "apolo memory",
-    run: runMemory
+    summary: "Inspect and manage local APOLO memory.",
+    usage: "apolo memory <list|search|show|add|export>",
+    run: runMemoryCommand
   },
   {
     name: "agents",
@@ -154,17 +155,6 @@ async function runTask(args: readonly string[], context: CliContext): Promise<nu
   }
 
   await writeStub(context, "run", "task execution");
-  return 0;
-}
-
-async function runMemory(args: readonly string[], context: CliContext): Promise<number> {
-  rejectUnexpectedArgs("memory", args);
-
-  const config = await loadConfig(context.cwd, context.env);
-  context.stdout.write("APOLO memory\n");
-  context.stdout.write(`driver: ${config.manifest.memory.driver}\n`);
-  context.stdout.write(`global: ${config.manifest.memory.globalPath}\n`);
-  context.stdout.write(`repo: ${config.manifest.memory.repoPath}\n`);
   return 0;
 }
 

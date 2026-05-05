@@ -19,8 +19,8 @@ This repository contains the APOLO-CLI MVP foundation:
 
 - npm package and global `apolo` binary contract
 - TypeScript CLI entrypoint and command router
-- Python subsystems for repository initialization, agent adapters, memory, security gates, run orchestration, verification, and PR metadata
-- local/global memory schema using SQLite
+- TypeScript foundations for memory, security gates, redaction, and verification
+- local/global memory storage using JSONL with a storage abstraction for future SQLite support
 - generic documentation, examples, packaging checks, and cross-platform CI
 
 The core contract is in place, but the public TypeScript router still exposes some provider workflows as integration seams or stubs. Treat the current package as an MVP foundation, not a fully polished production agent runner.
@@ -46,7 +46,6 @@ node dist/index.js --help
 Requirements:
 
 - Node.js 20+
-- Python 3.11+ for Python-backed subsystems and tests
 - Git for repository workflows
 - Optional: Ollama with a Qwen model for local analysis
 - Optional: supported agent CLIs installed locally
@@ -118,7 +117,7 @@ Execution must be based on an approved plan. APOLO enforces human approval befor
 | Agent limit | max 5 agents per task |
 | Approval mode | human approval always required |
 | PR providers | Claude or Codex |
-| Memory | SQLite, local-first, global + repository namespaces |
+| Memory | JSONL, local-first, global + repository namespaces |
 | Supported OS | Windows, macOS, Linux |
 
 ## Supported agent adapters
@@ -161,10 +160,10 @@ packaging/            npm packaging and binary smoke validation
 src/cli/              TypeScript CLI entrypoint, routing, logging, errors
 src/config/           Defaults, config loading, manifest model
 src/fs/               Filesystem layout helpers
-src/init/             Python repository scanner and harness generator
+src/init/             Repository scanner and harness generator
 src/agents/           Agent capability model, detection, adapters, execution
-src/memory/           SQLite memory store, markdown export, redaction
-src/security/         Policy gates and sensitive data checks
+src/memory/           JSONL memory store, CLI commands, export, redaction
+src/security/         TypeScript policy gates and sensitive data checks
 src/run/              Approved-plan execution orchestration
 src/verification/     Verification command detection and execution
 src/git/              Branch and PR draft helpers
@@ -179,7 +178,6 @@ npm run lint
 npm run typecheck
 npm test
 npm run test:integration
-npm run test:python
 npm run package:check
 npm run smoke:bin
 ```

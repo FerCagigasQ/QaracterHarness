@@ -34,9 +34,9 @@ export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
 
   return {
     globalHome,
-    globalMemoryDb: join(globalHome, "memory", "global.sqlite"),
+    globalMemoryDb: join(globalHome, "memory", "global.jsonl"),
     repoHome,
-    repoMemoryDb: join(repoHome, "memory", "repo.sqlite"),
+    repoMemoryDb: join(repoHome, "memory", "repo.jsonl"),
     manifestPath: join(repoHome, MANIFEST_FILE_NAME),
     configPath: join(cwd, CONFIG_FILE_NAME)
   };

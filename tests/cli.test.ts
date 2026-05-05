@@ -32,6 +32,9 @@ describe("apolo cli", () => {
     expect(manifest).toContain('"maxPerTask": 5');
     expect(manifest).toContain('"initMode": "pull-request"');
     expect(manifest).toContain('"directMain": false');
+    expect(manifest).toContain('"typescript"');
+    expect(manifest).not.toContain('"python"');
+    expect(manifest).toContain('"driver": "jsonl"');
   });
 
   it("uses APOLO_HOME as the global APOLO directory", async () => {
@@ -41,7 +44,7 @@ describe("apolo cli", () => {
     const run = await runCli(["doctor"], cwd, home, { APOLO_HOME: apoloHome });
 
     expect(run.code).toBe(0);
-    expect(run.stdout).toContain(`global memory: ${join(apoloHome, "memory", "global.sqlite")}`);
+    expect(run.stdout).toContain(`global memory: ${join(apoloHome, "memory", "global.jsonl")}`);
     expect(run.stdout).not.toContain(join(apoloHome, ".apolo"));
   });
 

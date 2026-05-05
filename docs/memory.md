@@ -2,8 +2,9 @@
 
 APOLO stores sanitized local memory in two namespaces:
 
-- Global memory: `~/.apolo/memory/memory.sqlite` with rendered notes under `~/.apolo/memory/notes/`.
-- Repository memory: `.apolo/run-ledger.sqlite` with versionable notes under `apolo-memory/`.
+- Global memory: `~/.apolo/memory/global.jsonl` for the TypeScript npm runtime.
+- Repository memory: `.apolo/memory/repo.jsonl` for the TypeScript npm runtime.
+- Python-era SQLite stores are still present in the repository for migration/reference, but Python is not required to run the APOLO npm CLI.
 
 Only sanitized summaries, decisions, and stable project context should be committed. Do not store credentials, tokens, private keys, customer data, or other sensitive data. The write path runs redaction before persistence and marks records as `redacted`.
 
@@ -15,9 +16,11 @@ Only sanitized summaries, decisions, and stable project context should be commit
 - `run_event`: short-lived execution ledger event. Default retention: 30 days.
 - `task`: actionable follow-up. Default retention: 90 days.
 
-## SQLite schema
+## Storage
 
-Migrations live in `migrations/`. The first migration creates:
+The TypeScript CLI uses a safe JSONL store with a narrow `MemoryStore` abstraction so the package avoids native SQLite install risk. The next step is to add an optional SQLite-backed implementation behind the same interface if the package can adopt a cross-platform dependency safely.
+
+Historical SQLite migrations live in `migrations/`. The first migration creates:
 
 - `memory_schema_migrations`
 - `memory_records`
@@ -33,25 +36,19 @@ Rendered notes are AI-first and start with:
 
 The template includes YAML-style metadata, context, and guidance for safe reuse. Repository notes under `apolo-memory/` are intended for non-sensitive summaries and decisions.
 
-## Command internals
+## CLI commands
 
-The CLI layer can call these internal functions from `src/memory/commands.py`:
+The npm CLI exposes:
 
-- `search_memory(store, query)`
-- `list_memory(store, query)`
-- `compact_memory(store, query, title)`
-- `export_memory(store, query, output_format)`
-
-The functions operate on a `MemoryStore` created with either:
-
-```python
-MemoryStore.global_store()
-MemoryStore.repo_store(repo_root)
-```
+- `apolo memory list`
+- `apolo memory search <query>`
+- `apolo memory show <id>`
+- `apolo memory add --title <title> --body <body> [--type decision|summary|observation|run_event|task] [--tag <tag>]`
+- `apolo memory export [--format markdown|json]`
 
 ## Redaction
 
-The redactor handles common secret-like patterns before SQLite or markdown writes:
+The redactor handles common secret-like patterns before JSONL or markdown writes:
 
 - private key blocks
 - access-key-shaped identifiers

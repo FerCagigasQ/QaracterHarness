@@ -10,7 +10,7 @@ The MVP package is npm-global first. The public binary name is `apolo`.
 - Node.js engine support
 - `bin.apolo`
 - `files` allowlist for publishable assets
-- validation scripts for typecheck, package contract, integration tests, Python fixture tests, and global bin smoke
+- validation scripts for typecheck, package contract, integration tests, Vitest coverage, and global bin smoke
 
 ## Validation commands
 
@@ -19,7 +19,6 @@ npm ci
 npm run typecheck
 npm run package:check
 npm test
-npm run test:python
 npm run smoke:bin
 ```
 
@@ -51,7 +50,7 @@ Runs a realistic global install flow without touching the user's global npm pref
 
 - package validation passes on Windows, macOS, and Linux
 - Node.js 20 and 22 pass CI
-- Python 3.11 and 3.12 pass fixture tests
+- Python target fixture detection is covered without making Python an APOLO runtime dependency
 - command docs match implemented command names
 - approval policy cannot be bypassed by flags
 - package tarball excludes local caches and secrets

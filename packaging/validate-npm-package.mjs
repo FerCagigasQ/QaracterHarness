@@ -37,7 +37,7 @@ const binStat = statSync(binPath);
 assert(binStat.isFile(), "bin.apolo must point to a file");
 assert(readFileSync(binPath, "utf8").startsWith("#!/usr/bin/env node"), "bin.apolo must have a Node.js shebang");
 
-for (const script of ["lint", "typecheck", "package:check", "test", "test:python", "smoke:bin", "ci", "build"]) {
+for (const script of ["lint", "typecheck", "package:check", "test", "smoke:bin", "ci", "build"]) {
   assert(packageJson.scripts?.[script], `missing npm script: ${script}`);
 }
 
