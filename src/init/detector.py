@@ -150,11 +150,13 @@ def _detect_commands(scan: RepoScan, languages: list[str]) -> dict[str, list[str
 
     if "python" in languages:
         pyproject = scan.read_text("pyproject.toml").lower()
-        if "pytest" in pyproject or scan.has_any("pytest.ini", "tox.ini"):
+        requirements = scan.read_text("requirements.txt").lower()
+        python_text = f"{pyproject}\n{requirements}"
+        if "pytest" in python_text or scan.has_any("pytest.ini", "tox.ini"):
             commands["test"].append("python -m pytest")
         else:
             commands["test"].append("python -m unittest discover")
-        if "ruff" in pyproject:
+        if "ruff" in python_text:
             commands["lint"].append("python -m ruff check .")
         if scan.has("pyproject.toml"):
             commands["build"].append("python -m build")
