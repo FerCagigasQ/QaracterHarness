@@ -1,9 +1,8 @@
-import { writeFile } from "node:fs/promises";
 import { ApoloError } from "./errors.js";
 import type { CliContext } from "./context.js";
 import { loadConfig } from "../config/loader.js";
-import { createDefaultManifest } from "../config/defaults.js";
-import { ensureRepoLayout, fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { fileExists, resolveApoloPaths } from "../fs/layout.js";
+import { formatInitResult, parseInitOptions, runApoloInit } from "../init/workspace.js";
 
 export interface Command {
   readonly name: string;
@@ -15,8 +14,8 @@ export interface Command {
 export const commands: readonly Command[] = [
   {
     name: "init",
-    summary: "Create the local APOLO filesystem layout and manifest.",
-    usage: "apolo init",
+    summary: "Create or update generic APOLO harness artifacts.",
+    usage: "apolo init [--dry-run] [--format json|text] [--force]",
     run: runInit
   },
   {
@@ -75,7 +74,7 @@ export async function dispatch(args: readonly string[], context: CliContext): Pr
   }
 
   if (commandArgs.includes("--help") || commandArgs.includes("-h")) {
-    context.stdout.write(`${command.usage}\n\n${command.summary}\n`);
+    context.stdout.write(`${command.usage}\n\n${command.summary}\n${formatCommandOptions(command.name)}`);
     return 0;
   }
 
@@ -105,22 +104,19 @@ export function formatHelp(): string {
 }
 
 async function runInit(args: readonly string[], context: CliContext): Promise<number> {
-  rejectUnexpectedArgs("init", args);
-
-  const paths = resolveApoloPaths(context.cwd, context.env);
-  await ensureRepoLayout(paths);
-
-  if (await fileExists(paths.manifestPath)) {
-    context.stdout.write(`APOLO workspace already initialized at ${paths.repoHome}\n`);
-    return 0;
+  let options;
+  try {
+    options = parseInitOptions(args);
+  } catch (error) {
+    throw new ApoloError(error instanceof Error ? error.message : "Invalid apolo init options.", {
+      exitCode: 2,
+      hint: "Run `apolo init --help` for usage."
+    });
   }
 
-  const manifest = createDefaultManifest(context.cwd, context.env);
-  await writeFile(paths.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-
-  context.stdout.write(`Initialized APOLO workspace at ${paths.repoHome}\n`);
-  context.stdout.write("Default init mode: pull-request\n");
-  return 0;
+  const result = await runApoloInit(context.cwd, context.env, options);
+  context.stdout.write(formatInitResult(result, options.format));
+  return result.summary.conflicts.length > 0 ? 1 : 0;
 }
 
 async function runDoctor(args: readonly string[], context: CliContext): Promise<number> {
@@ -204,4 +200,20 @@ function rejectUnexpectedArgs(command: string, args: readonly string[]): void {
       hint: `Run \`apolo ${command} --help\` for usage.`
     });
   }
+}
+
+function formatCommandOptions(command: string): string {
+  if (command !== "init") {
+    return "";
+  }
+
+  return [
+    "",
+    "Options:",
+    "  --dry-run            Show planned changes without writing.",
+    "  --format json|text   Select output format.",
+    "  --json               Alias for --format json.",
+    "  --force              Update APOLO-managed files with managed markers.",
+    ""
+  ].join("\n");
 }
