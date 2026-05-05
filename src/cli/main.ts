@@ -1,5 +1,8 @@
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout, stderr } from "node:process";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { ApoloError } from "./errors.js";
 import { createLogger, logLevelFromArgs, type Writer } from "./logger.js";
 import { dispatch } from "./router.js";
@@ -20,6 +23,11 @@ export async function main(args: readonly string[], runtime: Partial<CliRuntime>
   const logger = createLogger(resolvedRuntime.stderr, logLevelFromArgs(args));
 
   try {
+    if (commandArgs[0] === "--version" || commandArgs[0] === "-v") {
+      resolvedRuntime.stdout.write(`${readPackageVersion()}\n`);
+      return 0;
+    }
+
     return await dispatch(commandArgs, {
       cwd: resolvedRuntime.cwd,
       env: resolvedRuntime.env,
@@ -67,4 +75,10 @@ async function defaultReadLine(prompt: string): Promise<string> {
 
 function stripGlobalFlags(args: readonly string[]): readonly string[] {
   return args.filter((arg) => arg !== "--verbose" && arg !== "--quiet");
+}
+
+function readPackageVersion(): string {
+  const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+  const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  return typeof packageJson.version === "string" ? packageJson.version : "0.0.0";
 }

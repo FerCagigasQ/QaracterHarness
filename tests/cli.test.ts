@@ -34,6 +34,17 @@ describe("apolo cli", () => {
     expect(manifest).toContain('"directMain": false');
   });
 
+  it("uses APOLO_HOME as the global APOLO directory", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+    const apoloHome = await mkdtemp(join(tmpdir(), "apolo-global-"));
+    const run = await runCli(["doctor"], cwd, home, { APOLO_HOME: apoloHome });
+
+    expect(run.code).toBe(0);
+    expect(run.stdout).toContain(`global memory: ${join(apoloHome, "memory", "global.sqlite")}`);
+    expect(run.stdout).not.toContain(join(apoloHome, ".apolo"));
+  });
+
   it("reports doctor defaults before initialization", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
     const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
@@ -61,7 +72,12 @@ describe("apolo cli", () => {
   });
 });
 
-async function runCli(args: readonly string[], cwd?: string, home?: string): Promise<CapturedRun> {
+async function runCli(
+  args: readonly string[],
+  cwd?: string,
+  home?: string,
+  env: Record<string, string> = {}
+): Promise<CapturedRun> {
   let stdout = "";
   let stderr = "";
   const resolvedCwd = cwd ?? (await mkdtemp(join(tmpdir(), "apolo-repo-")));
@@ -69,7 +85,8 @@ async function runCli(args: readonly string[], cwd?: string, home?: string): Pro
   const code = await main(args, {
     cwd: resolvedCwd,
     env: {
-      HOME: resolvedHome
+      HOME: resolvedHome,
+      ...env
     },
     isInteractive: false,
     stdout: {

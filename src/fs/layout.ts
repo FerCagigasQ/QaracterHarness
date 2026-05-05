@@ -17,7 +17,7 @@ export interface ApoloPaths {
 }
 
 export function resolveHome(env: Env): string {
-  const home = env.APOLO_HOME ?? env.HOME ?? env.USERPROFILE;
+  const home = env.HOME ?? env.USERPROFILE;
 
   if (!home) {
     throw new ApoloError("Unable to resolve a home directory.", {
@@ -29,7 +29,7 @@ export function resolveHome(env: Env): string {
 }
 
 export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
-  const globalHome = join(resolveHome(env), ".apolo");
+  const globalHome = env.APOLO_HOME ?? join(resolveHome(env), ".apolo");
   const repoHome = join(cwd, ".apolo");
 
   return {

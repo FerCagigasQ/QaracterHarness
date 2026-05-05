@@ -41,7 +41,7 @@ for (const script of ["lint", "typecheck", "package:check", "test", "test:python
   assert(packageJson.scripts?.[script], `missing npm script: ${script}`);
 }
 
-for (const entry of ["dist"]) {
+for (const entry of ["dist", "package.json"]) {
   assert(packageJson.files?.includes(entry), `package files must include ${entry}`);
 }
 
