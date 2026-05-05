@@ -89,7 +89,8 @@ describe("apolo cli", () => {
     const run = await runCli(["init", "--format", "json"], cwd, home);
 
     expect(run.code).toBe(1);
-    const payload = JSON.parse(run.stdout) as { summary: { conflicts: string[] } };
+    const payload = JSON.parse(run.stdout) as { mode: string; summary: { conflicts: string[] } };
+    expect(payload.mode).toBe("conflict");
     expect(payload.summary.conflicts).toContain(".apolo/apolo.yaml");
     await expect(readFile(join(cwd, ".apolo", "apolo.yaml"), "utf8")).resolves.toBe("user-owned: true\n");
   });
