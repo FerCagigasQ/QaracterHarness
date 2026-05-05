@@ -18,7 +18,9 @@ SENSITIVE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "named_secret",
         re.compile(
-            r"(?i)\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret|password|passwd|pwd|private[_-]?key)\b\s*[:=]\s*['\"]?([^\s'\"<>]{8,})"
+            r"(?i)\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|"
+            r"client[_-]?secret|password|passwd|pwd|private[_-]?key)\b"
+            r"\s*[:=]\s*['\"]?([^\s'\"<>]{8,})"
         ),
     ),
     ("bearer_token", re.compile(r"(?i)\bbearer\s+([a-z0-9._~+/=-]{20,})")),
@@ -27,7 +29,9 @@ SENSITIVE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "private_key_block",
         re.compile(
-            r"-----BEGIN\s+(?:RSA|DSA|EC|OPENSSH|PRIVATE)\s+PRIVATE\s+KEY-----.*?-----END\s+(?:RSA|DSA|EC|OPENSSH|PRIVATE)\s+PRIVATE\s+KEY-----",
+            r"-----BEGIN\s+(?:RSA|DSA|EC|OPENSSH|PRIVATE)\s+PRIVATE\s+KEY-----"
+            r".*?"
+            r"-----END\s+(?:RSA|DSA|EC|OPENSSH|PRIVATE)\s+PRIVATE\s+KEY-----",
             re.DOTALL,
         ),
     ),

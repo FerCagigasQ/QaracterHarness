@@ -116,9 +116,18 @@ class SecurityGateEngine:
 
         decisions: list[GateDecision] = []
         candidates: list[tuple[str, str]] = []
-        candidates.extend((f"command[{index}]", command) for index, command in enumerate(request.commands))
-        candidates.extend((f"file_write[{item.path}]", item.content) for item in request.file_writes)
-        candidates.extend((f"memory_write[{item.key}]", item.value) for item in request.memory_writes)
+        candidates.extend(
+            (f"command[{index}]", command)
+            for index, command in enumerate(request.commands)
+        )
+        candidates.extend(
+            (f"file_write[{item.path}]", item.content)
+            for item in request.file_writes
+        )
+        candidates.extend(
+            (f"memory_write[{item.key}]", item.value)
+            for item in request.memory_writes
+        )
         for tool in request.tools:
             candidates.append((f"tool[{tool.name}]", repr(tool.args)))
 
