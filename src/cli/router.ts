@@ -141,7 +141,8 @@ export function formatHelp(): string {
 async function runInit(args: readonly string[], context: CliContext): Promise<CommandResult> {
   let options;
   try {
-    options = parseInitOptions(args);
+    const initArgs = context.outputFormat === "json" && !hasFormatArg(args) ? [...args, "--format", "json"] : args;
+    options = parseInitOptions(initArgs);
   } catch (error) {
     throw new ApoloError(error instanceof Error ? error.message : "Invalid apolo init options.", {
       exitCode: 2,
@@ -150,7 +151,6 @@ async function runInit(args: readonly string[], context: CliContext): Promise<Co
   }
 
   const result = await runApoloInit(context.cwd, context.env, options);
-  context.stdout.write(formatInitResult(result, options.format));
 
   if (result.summary.conflicts.length > 0) {
     throw new ApoloError("Init completed with unresolved conflicts.", {
@@ -159,6 +159,11 @@ async function runInit(args: readonly string[], context: CliContext): Promise<Co
     });
   }
 
+  if (context.outputFormat === "json") {
+    return commandOk("init", { data: result });
+  }
+
+  context.stdout.write(formatInitResult(result, options.format));
   return commandOk("init");
 }
 
@@ -262,6 +267,14 @@ async function runSync(args: readonly string[], context: CliContext): Promise<Co
 /* ── memory ──────────────────────────────────────────────────────── */
 
 async function runMemory(args: readonly string[], context: CliContext): Promise<CommandResult> {
+  if (context.outputFormat === "json") {
+    const { exitCode, stdout } = await captureCommand((capturedContext) => runMemoryCommand(args, capturedContext), context);
+    if (exitCode !== 0) {
+      throw new ApoloError("Memory command failed.", { exitCode });
+    }
+    return commandOk("memory", { data: outputAsData(stdout) });
+  }
+
   const exitCode = await runMemoryCommand(args, context);
   if (exitCode !== 0) {
     throw new ApoloError("Memory command failed.", { exitCode });
@@ -274,6 +287,7 @@ async function runMemory(args: readonly string[], context: CliContext): Promise<
 async function runAgents(args: readonly string[], context: CliContext): Promise<CommandResult> {
   const config = await loadConfig(context.cwd, context.env);
   const options = parseAgentsArgs(args);
+  const emitJson = context.outputFormat === "json" || options.json;
   const agents = await detectAgents({ env: context.env });
   const routing =
     options.routePrompt !== undefined
@@ -283,25 +297,24 @@ async function runAgents(args: readonly string[], context: CliContext): Promise<
             task: options.task,
             requirePr: options.requirePr,
             maxAgents: MAX_AGENTS_PER_TASK,
-            preferJson: options.json
+            preferJson: emitJson
           },
           agents
         )
       : null;
+  const data = {
+    maxAgentsPerTask: config.manifest.agents.maxPerTask,
+    configuredAgents: config.manifest.agents.configured.length,
+    agents,
+    routing
+  };
+
+  if (context.outputFormat === "json") {
+    return commandOk("agents", { data });
+  }
 
   if (options.json) {
-    context.stdout.write(
-      `${JSON.stringify(
-        {
-          maxAgentsPerTask: config.manifest.agents.maxPerTask,
-          configuredAgents: config.manifest.agents.configured.length,
-          agents,
-          routing
-        },
-        null,
-        2
-      )}\n`
-    );
+    context.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
     return commandOk("agents");
   }
 
@@ -476,6 +489,34 @@ function readFlagValue(args: readonly string[], index: number, flag: string): st
     });
   }
   return value;
+}
+
+async function captureCommand(
+  run: (context: CliContext) => Promise<number>,
+  context: CliContext
+): Promise<{ readonly exitCode: number; readonly stdout: string }> {
+  let stdout = "";
+  const exitCode = await run({
+    ...context,
+    stdout: {
+      write: (chunk) => {
+        stdout += chunk;
+      }
+    }
+  });
+  return { exitCode, stdout };
+}
+
+function outputAsData(stdout: string): unknown {
+  const trimmed = stdout.trim();
+  if (!trimmed) {
+    return {};
+  }
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return { output: trimmed };
+  }
 }
 
 async function requestHumanApproval(

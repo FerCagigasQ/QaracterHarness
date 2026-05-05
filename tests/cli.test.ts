@@ -91,6 +91,22 @@ describe("apolo cli", () => {
     expect(payload.data.checks.find((check: { name: string }) => check.name === "python").detail).toContain("optional");
   });
 
+  it("keeps global JSON output structured for commands that write their own output", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+
+    const init = await runCli(["--json", "init", "--dry-run"], cwd, home);
+    const agents = await runCli(["--json", "agents"], cwd, home);
+    const memory = await runCli(["--json", "memory"], cwd, home);
+
+    expect(init.code).toBe(0);
+    expect(JSON.parse(init.stdout)).toMatchObject({ ok: true, command: "init" });
+    expect(agents.code).toBe(0);
+    expect(JSON.parse(agents.stdout)).toMatchObject({ ok: true, command: "agents" });
+    expect(memory.code).toBe(0);
+    expect(JSON.parse(memory.stdout)).toMatchObject({ ok: true, command: "memory" });
+  });
+
   it("requires approval before run in non-interactive mode", async () => {
     const run = await runCli(["run", "example task"]);
 

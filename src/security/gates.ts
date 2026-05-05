@@ -325,7 +325,7 @@ function matchesDeniedPath(path: string, candidate: string): boolean {
   if (!normalizedCandidate) {
     return false;
   }
-  return path.endsWith(`/${normalizedCandidate}`) || path.includes(`/${normalizedCandidate}/`) || path.includes(`/${normalizedCandidate}`);
+  return path === normalizedCandidate || path.endsWith(`/${normalizedCandidate}`) || path.includes(`/${normalizedCandidate}/`);
 }
 
 function decision(gate: string, allowed: boolean, reason: string, requiresApproval: boolean, metadata: Readonly<Record<string, unknown>> = {}): GateDecision {

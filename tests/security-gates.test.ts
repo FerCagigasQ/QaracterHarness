@@ -45,6 +45,16 @@ describe("typescript security gates", () => {
     expect(hasBlock(decisions, "secrets")).toBe(false);
     expect(hasBlock(decisions, "memory_write")).toBe(true);
   });
+
+  it("does not deny writes when denied names are only filename substrings", () => {
+    const decisions = new SecurityGateEngine().evaluate({
+      actor: "claude",
+      approvals: { humanRunApproved: true },
+      fileWrites: [{ path: "src/credentials_validator.ts", content: "safe" }]
+    });
+
+    expect(hasBlock(decisions, "write_scope")).toBe(false);
+  });
 });
 
 function hasBlock(decisions: readonly { gate: string; allowed: boolean }[], gate: string): boolean {
