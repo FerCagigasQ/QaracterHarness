@@ -47,7 +47,7 @@ describe("typescript verification commands", () => {
     const repo = await mkdtemp(join(tmpdir(), "apolo-runner-"));
     const detector: VerificationDetector = {
       detect: async (): Promise<readonly DetectedCommand[]> => [
-        { name: "slow", command: [process.execPath, "-e", "setTimeout(() => {}, 1000)"] },
+        { name: "slow", command: [process.execPath, "-e", "setInterval(() => {}, 1000)"] },
         { name: "fast", command: [process.execPath, "-e", "console.error('password=DUMMY_SECRET_VALUE_123456'); console.log('ok')"] }
       ]
     };
