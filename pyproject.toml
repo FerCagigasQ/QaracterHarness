@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apolo-cli"
+version = "0.1.0"
+description = "APOLO CLI MVP harness generator"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "APOLO" }]
+dependencies = []
+
+[project.scripts]
+apolo = "init.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.tpl", "**/*.tpl"]

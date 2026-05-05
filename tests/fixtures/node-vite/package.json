@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "build": "vite build",
+    "lint": "eslint .",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}
