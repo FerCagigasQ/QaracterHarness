@@ -140,6 +140,22 @@ class SecurityGateEngineTest(unittest.TestCase):
 
         self.assertTrue(_has_block(decisions, "memory_write"))
 
+    def test_memory_write_sensitive_check_runs_when_secrets_gate_disabled(self) -> None:
+        config = PolicyConfig(
+            secrets=SecretsPolicy(enabled=False, allow_dummy_placeholders=False)
+        )
+        request = PlanRequest(
+            actor="claude",
+            memory_writes=(
+                MemoryWrite(key="note", value="api_key=DUMMY_SECRET_VALUE"),
+            ),
+            approvals=ApprovalContext(human_run_approved=True),
+        )
+
+        decisions = SecurityGateEngine(config).evaluate(request)
+
+        self.assertTrue(_has_block(decisions, "memory_write"))
+
     def test_blocks_over_budget_runs(self) -> None:
         request = PlanRequest(
             actor="claude",
