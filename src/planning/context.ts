@@ -34,7 +34,7 @@ export async function buildContextPack(cwd: string, env: Env): Promise<ContextPa
   const packageJson = await readJsonObject(join(cwd, "package.json"));
   const documents = await readDocuments(cwd);
   const verificationCommands = await detectVerificationCommands(cwd, packageJson);
-  const agents = await detectAgents(config.manifest.agents.configured);
+  const agents = await detectAgents(config.manifest.agents.configured, env);
   const approvedMemory = await readApprovedMemory(cwd);
 
   return {
@@ -99,7 +99,10 @@ async function detectVerificationCommands(
   return commands;
 }
 
-async function detectAgents(configuredAgents: readonly { name: string; description: string; enabled: boolean }[]): Promise<readonly DetectedAgent[]> {
+async function detectAgents(
+  configuredAgents: readonly { name: string; description: string; enabled: boolean }[],
+  env: Env
+): Promise<readonly DetectedAgent[]> {
   const configured = configuredAgents
     .filter((agent) => agent.enabled)
     .map((agent) => ({
@@ -113,7 +116,7 @@ async function detectAgents(configuredAgents: readonly { name: string; descripti
       name: agent.name,
       description: agent.description,
       source: "detected" as const,
-      available: await executableExists(agent.executable)
+      available: await executableExists(agent.executable, env)
     }))
   );
   const available = detected.filter((agent) => agent.available);
@@ -176,8 +179,8 @@ async function readSqliteMemorySummary(path: string): Promise<readonly ApprovedM
   ];
 }
 
-async function executableExists(executable: string): Promise<boolean> {
-  const pathValue = process.env.PATH ?? "";
+async function executableExists(executable: string, env: Env): Promise<boolean> {
+  const pathValue = env.PATH ?? process.env.PATH ?? "";
   const paths = pathValue.split(process.platform === "win32" ? ";" : ":").filter(Boolean);
   const candidates = process.platform === "win32" ? [executable, `${executable}.cmd`, `${executable}.exe`] : [executable];
 
