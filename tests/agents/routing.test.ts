@@ -157,6 +157,25 @@ describe("routeAgents", () => {
     expect(ollama!.machineReadableCommand).toBeNull();
   });
 
+
+  it("routes to ollama-qwen when it is the only installed performance-capable agent", () => {
+    const detections = [fakeDetection("ollama-qwen", true)];
+    const decision = routeAgents({ prompt: "optimize slow local analysis", task: "performance" }, detections);
+    expect(decision.selectedAgents.map((a) => a.id)).toEqual(["ollama-qwen"]);
+  });
+
+  it("routes to opencode when it is the only installed bug-capable agent", () => {
+    const detections = [fakeDetection("opencode", true)];
+    const decision = routeAgents({ prompt: "fix broken behavior", task: "bug" }, detections);
+    expect(decision.selectedAgents.map((a) => a.id)).toEqual(["opencode"]);
+  });
+
+  it("routes to gemini-cli when it is the only installed simple-capable agent", () => {
+    const detections = [fakeDetection("gemini-cli", true)];
+    const decision = routeAgents({ prompt: "summarize the codebase", task: "simple" }, detections);
+    expect(decision.selectedAgents.map((a) => a.id)).toEqual(["gemini-cli"]);
+  });
+
   it("reports max 5 agents constant", () => {
     expect(MAX_AGENTS_PER_TASK).toBe(5);
   });

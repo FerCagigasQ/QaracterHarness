@@ -147,11 +147,11 @@ export function parseTaskCapability(value: string | undefined): TaskCapability |
 
 function priorityForTask(task: TaskCapability): readonly AgentId[] {
   const priorities: Record<TaskCapability, readonly AgentId[]> = {
-    simple: ["claude-code", "ollama-qwen", "codex-cli", "github-copilot-cli", "cursor-cli"],
-    bug: ["claude-code", "codex-cli", "cursor-cli", "ollama-qwen", "github-copilot-cli"],
-    feature: ["claude-code", "codex-cli", "cursor-cli", "gemini-cli", "opencode"],
+    simple: ["claude-code", "ollama-qwen", "codex-cli", "github-copilot-cli", "cursor-cli", "opencode", "gemini-cli"],
+    bug: ["claude-code", "codex-cli", "cursor-cli", "ollama-qwen", "github-copilot-cli", "opencode"],
+    feature: ["claude-code", "codex-cli", "cursor-cli", "gemini-cli", "opencode", "github-copilot-cli"],
     security: ["claude-code", "codex-cli", "gemini-cli", "opencode"],
-    performance: ["claude-code", "codex-cli", "gemini-cli", "opencode", "cursor-cli"]
+    performance: ["claude-code", "codex-cli", "gemini-cli", "opencode", "cursor-cli", "ollama-qwen", "github-copilot-cli"]
   };
   return priorities[task];
 }
