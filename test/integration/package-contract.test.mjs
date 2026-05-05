@@ -14,7 +14,7 @@ test("package exposes the apolo binary", () => {
 });
 
 test("package has validation scripts", () => {
-  for (const script of ["lint", "typecheck", "package:check", "test", "smoke:bin", "ci", "build"]) {
+  for (const script of ["lint", "typecheck", "package:check", "test", "test:python", "smoke:bin", "ci", "build"]) {
     assert.equal(typeof packageJson.scripts[script], "string", `missing ${script}`);
   }
 });

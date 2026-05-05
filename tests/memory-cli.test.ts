@@ -42,6 +42,32 @@ describe("typescript memory cli", () => {
     expect(persisted).toContain("[REDACTED_SECRET]");
     expect(persisted).not.toContain("DUMMY_SECRET_VALUE_123456");
   });
+
+  it("handles equals-style flags before positional args and exports more than list default", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-memory-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-memory-home-"));
+
+    for (let index = 0; index < 25; index += 1) {
+      const add = await runCli([
+        "memory",
+        "add",
+        "--title",
+        `Memory ${index}`,
+        "--body",
+        `Body ${index}`,
+        "--type=observation"
+      ], cwd, home);
+      expect(add.code).toBe(0);
+    }
+
+    const search = await runCli(["memory", "search", "--namespace=repo", "Memory 24"], cwd, home);
+    expect(search.code).toBe(0);
+    expect(search.stdout).toContain("Memory 24");
+
+    const exported = await runCli(["memory", "export", "--format=json"], cwd, home);
+    expect(exported.code).toBe(0);
+    expect(JSON.parse(exported.stdout)).toHaveLength(25);
+  });
 });
 
 interface CapturedRun {

@@ -9,6 +9,7 @@ Workstream 08 provides the test surface that implementation PRs can plug into wi
 | TypeScript validation | `npm run typecheck` | Validate JavaScript/TypeScript syntax and project config. |
 | Package contract | `npm run package:check` | Validate npm metadata and pack contents. |
 | Node integration | `npm test` | Validate docs, command references, package contract, and fixture shape. |
+| Legacy Python harness compatibility | `npm run test:python` | Skip cleanly by default; run legacy fixture tests only when `APOLO_RUN_LEGACY_PYTHON_TESTS=1`. |
 | Global bin smoke | `npm run smoke:bin` | Pack, install, and execute the global `apolo` bin from a temporary prefix. |
 
 ## CI matrix

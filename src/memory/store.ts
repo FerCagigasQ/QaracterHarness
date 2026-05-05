@@ -100,7 +100,7 @@ export class JsonlMemoryStore implements MemoryStore {
   }
 
   async export(query: MemoryQuery = {}, format: MemoryExportFormat = "markdown"): Promise<string> {
-    const records = await this.list({ limit: 1000, ...query });
+    const records = await this.list({ ...query, limit: query.limit ?? 1000 });
     if (format === "json") {
       return JSON.stringify(records, null, 2);
     }

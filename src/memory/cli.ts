@@ -12,7 +12,7 @@ interface MemoryOptions {
   readonly type: MemoryRecordType;
   readonly tags: readonly string[];
   readonly format: "markdown" | "json";
-  readonly limit: number;
+  readonly limit: number | undefined;
 }
 
 export async function runMemoryCommand(args: readonly string[], context: CliContext): Promise<number> {
@@ -24,7 +24,7 @@ export async function runMemoryCommand(args: readonly string[], context: CliCont
   const options = parseMemoryOptions(subcommandArgs);
   const store = await resolveStore(context, options.namespace);
   if (subcommand === "list") {
-    const records = await store.list({ namespace: options.namespace, limit: options.limit });
+    const records = await store.list(memoryQuery(options));
     writeRecords(context, records);
     return 0;
   }
@@ -33,7 +33,7 @@ export async function runMemoryCommand(args: readonly string[], context: CliCont
     if (!text) {
       throw usageError("apolo memory search requires a query.");
     }
-    const records = await store.search({ namespace: options.namespace, text, tags: options.tags, limit: options.limit });
+    const records = await store.search({ ...memoryQuery(options), text, tags: options.tags });
     writeRecords(context, records);
     return 0;
   }
@@ -64,7 +64,7 @@ export async function runMemoryCommand(args: readonly string[], context: CliCont
     return 0;
   }
   if (subcommand === "export") {
-    context.stdout.write(await store.export({ namespace: options.namespace, limit: options.limit }, options.format));
+    context.stdout.write(await store.export(memoryQuery(options), options.format));
     context.stdout.write("\n");
     return 0;
   }
@@ -131,8 +131,15 @@ function writeRecords(context: CliContext, records: readonly { id: string; recor
   }
 }
 
+function memoryQuery(options: MemoryOptions) {
+  return {
+    namespace: options.namespace,
+    ...(options.limit ? { limit: options.limit } : {})
+  };
+}
+
 function firstPositional(args: readonly string[]): string | undefined {
-  return args.find((arg, index) => !arg.startsWith("--") && !args[index - 1]?.startsWith("--"));
+  return args.find((arg, index) => !arg.startsWith("--") && (index === 0 || !args[index - 1]?.startsWith("--") || args[index - 1]?.includes("=")));
 }
 
 function parseNamespace(value: string | undefined): MemoryNamespace {
@@ -165,9 +172,9 @@ function parseFormat(value: string | undefined): "markdown" | "json" {
   throw usageError("Memory export format must be markdown or json.");
 }
 
-function parseLimit(value: string | undefined): number {
+function parseLimit(value: string | undefined): number | undefined {
   if (value === undefined) {
-    return 20;
+    return undefined;
   }
   const limit = Number.parseInt(value, 10);
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {

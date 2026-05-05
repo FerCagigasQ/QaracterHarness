@@ -10,7 +10,7 @@ The MVP package is npm-global first. The public binary name is `apolo`.
 - Node.js engine support
 - `bin.apolo`
 - `files` allowlist for publishable assets
-- validation scripts for typecheck, package contract, integration tests, Vitest coverage, and global bin smoke
+- validation scripts for typecheck, package contract, integration tests, legacy Python harness compatibility, Vitest coverage, and global bin smoke
 
 ## Validation commands
 
@@ -19,6 +19,7 @@ npm ci
 npm run typecheck
 npm run package:check
 npm test
+npm run test:python
 npm run smoke:bin
 ```
 
@@ -45,6 +46,10 @@ Runs a realistic global install flow without touching the user's global npm pref
 5. run `apolo --version`
 6. run `apolo --help`
 7. run dry-run command paths
+
+## `npm run test:python`
+
+This is a legacy compatibility script for workflows that still invoke Python fixture tests. It skips cleanly by default so Python is not required to run APOLO. Set `APOLO_RUN_LEGACY_PYTHON_TESTS=1` to execute the old dependency-free Python harness explicitly.
 
 ## Release readiness checklist
 

@@ -18,6 +18,7 @@
     "smoke:bin": "npm run build && node packaging/smoke-bin.mjs",
     "test": "vitest run tests/*.test.ts",
     "test:integration": "node --test test/integration/*.test.mjs",
+    "test:python": "node packaging/test-python-compat.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "engines": {
