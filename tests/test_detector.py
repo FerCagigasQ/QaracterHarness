@@ -22,6 +22,18 @@ class DetectorTests(unittest.TestCase):
         self.assertIn("python -m pytest", detection.test_commands)
         self.assertTrue(detection.tests_present)
 
+    def test_detects_python_tools_from_requirements(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "requirements.txt").write_text("pytest==8.0.0\nruff==0.5.0\n", encoding="utf-8")
+
+            detection = detect_stack(scan_repo(root))
+
+        self.assertIn("pytest", detection.frameworks)
+        self.assertIn("ruff", detection.frameworks)
+        self.assertIn("python -m pytest", detection.test_commands)
+        self.assertIn("python -m ruff check .", detection.lint_commands)
+
     def test_detects_node_scripts_and_ci(self) -> None:
         detection = detect_stack(scan_repo(FIXTURES / "node-vite"))
 
