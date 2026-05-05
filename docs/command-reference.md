@@ -72,16 +72,18 @@ Expected behavior:
 Runs an approved plan.
 
 ```bash
-apolo run --plan .apolo/plans/latest.json
+apolo run --from-plan .apolo/plans/latest.json --approve
 ```
 
 Expected behavior:
 
-- reject unapproved plans
-- enforce max 5 agents
-- stream execution status
-- capture logs and artifacts under `.apolo/runs/`
-- require fresh approval before side effects
+- load JSON or markdown plan artifacts
+- reject plans without explicit approval or approval prompting
+- enforce max 5 agents and security gates before side effects
+- capture a JSONL ledger and checkpoint under `.apolo/runs/<run-id>/`
+- execute through dry-run, fake-agent, or command-spec adapter seams
+- run verification, record memory, and prepare Claude/Codex PR metadata without pushing to main
+- resume terminal checkpoints with `apolo run --resume <run-id>`
 
 ## `apolo sync`
 
