@@ -83,4 +83,4 @@ def _diff(existing: str, generated: str, relative_path: str) -> str:
 
 def _make_executable(target: Path) -> None:
     mode = target.stat().st_mode
-    target.chmod(mode | os.XUSR | os.XGRP | os.XOTH)
+    target.chmod(mode | 0o111)

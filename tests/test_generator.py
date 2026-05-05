@@ -44,6 +44,20 @@ class GeneratorTests(unittest.TestCase):
         self.assertIn("AGENTS.md", summary.conflicts)
         self.assertFalse((root / "apolo.yaml").exists())
 
+    def test_writer_marks_executable_files(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            scan = scan_repo(root)
+            detection = detect_stack(scan)
+            plan = build_harness_plan(scan, detection, build_handoff_summary(root, detection))
+
+            summary = apply_write_plan(plan)
+
+            init_file = root / "init.sh"
+            self.assertFalse(summary.conflicts)
+            self.assertTrue(init_file.exists())
+            self.assertTrue(init_file.stat().st_mode & 0o111)
+
     def test_dry_run_reports_creates(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
