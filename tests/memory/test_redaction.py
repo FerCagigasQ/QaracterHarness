@@ -39,6 +39,8 @@ class MemoryRedactionTest(unittest.TestCase):
             self.assertNotIn("dummyplaceholdertoken123", loaded.body)
             self.assertEqual(("[REDACTED_SECRET]",), loaded.tags)
             self.assertEqual("[REDACTED_SECRET]", loaded.metadata["api_key"])
+            self.assertEqual(stored.metadata, loaded.metadata)
+            self.assertGreaterEqual(loaded.metadata["redaction_count"], 3)
             self.assertIsNotNone(stored.markdown_path)
             markdown = stored.markdown_path.read_text(encoding="utf-8")
             self.assertIn("[REDACTED_SECRET]", markdown)

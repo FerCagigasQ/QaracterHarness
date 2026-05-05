@@ -24,9 +24,13 @@ def apply_migrations(connection: sqlite3.Connection, migrations_dir: Path = MIGR
         version = migration.stem
         if version in applied:
             continue
-        connection.executescript(migration.read_text(encoding="utf-8"))
-        connection.execute(
-            "INSERT INTO memory_schema_migrations(version) VALUES (?)",
-            (version,),
+        escaped_version = version.replace("'", "''")
+        connection.executescript(
+            f"""
+            BEGIN;
+            {migration.read_text(encoding="utf-8").rstrip().rstrip(";")};
+            INSERT INTO memory_schema_migrations(version) VALUES ('{escaped_version}');
+            COMMIT;
+            """
         )
     connection.commit()

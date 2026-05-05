@@ -57,6 +57,14 @@ class MemoryStore:
         source_redaction = redact_text(record.source or "")
         tag_redactions = tuple(redact_text(tag) for tag in record.tags)
         metadata, metadata_redaction_count = self._redact_metadata(record.metadata)
+        metadata = {
+            **metadata,
+            "redaction_count": len(title_redaction.findings)
+            + len(body_redaction.findings)
+            + len(source_redaction.findings)
+            + sum(len(redaction.findings) for redaction in tag_redactions)
+            + metadata_redaction_count,
+        }
         created_at = record.created_at or now
         updated_at = now
         expires_at = record.expires_at
@@ -111,14 +119,7 @@ class MemoryStore:
                     str(sanitized.repo_path) if sanitized.repo_path else None,
                     json.dumps(list(sanitized.tags), sort_keys=True),
                     json.dumps(
-                        {
-                            **metadata,
-                            "redaction_count": len(title_redaction.findings)
-                            + len(body_redaction.findings)
-                            + len(source_redaction.findings)
-                            + sum(len(redaction.findings) for redaction in tag_redactions)
-                            + metadata_redaction_count,
-                        },
+                        metadata,
                         sort_keys=True,
                     ),
                     sanitized.sensitivity,
