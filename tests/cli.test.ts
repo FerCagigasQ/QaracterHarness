@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -197,6 +197,63 @@ describe("apolo cli", () => {
         code: "NOT_IMPLEMENTED"
       }
     });
+  });
+
+  it("writes a read-only plan artifact under .apolo/plans", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+    await writeFile(join(cwd, "README.md"), "# Fixture\n\nPlanning context.", "utf8");
+    await writeFile(
+      join(cwd, "package.json"),
+      JSON.stringify({ name: "fixture", version: "1.0.0", scripts: { lint: "tsc", test: "vitest" } }),
+      "utf8"
+    );
+
+    const run = await runCli(["plan", "--task", "Add parser tests"], cwd, home, {
+      APOLO_PLAN_DISABLE_CLAUDE: "1"
+    });
+
+    expect(run.code).toBe(0);
+    expect(run.stdout).toContain("Plan artifact written:");
+    const artifactPath = run.stdout.match(/Plan artifact written: (.+\.md)/)?.[1];
+    expect(artifactPath).toBeDefined();
+    expect(artifactPath).toContain(join(cwd, ".apolo", "plans"));
+    const artifact = await readFile(artifactPath as string, "utf8");
+    expect(artifact).toContain("## Objective");
+    expect(artifact).toContain("## Non-goals");
+    expect(artifact).toContain("## Assumptions");
+    expect(artifact).toContain("## Risks");
+    expect(artifact).toContain("## Probable files");
+    expect(artifact).toContain("## Agent allocation (max 5)");
+    expect(artifact).toContain("## Verification commands");
+    expect(artifact).toContain("## Acceptance criteria");
+    expect(artifact).toContain("## Approval checkpoints");
+    expect(artifact).toContain("npm run lint");
+    expect(artifact).toContain("Approval required before run: yes");
+  });
+
+  it("supports dry-run JSON without writing a plan file", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "apolo-repo-"));
+    const home = await mkdtemp(join(tmpdir(), "apolo-home-"));
+    const run = await runCli(["plan", "--task", "Review CLI UX", "--dry-run", "--format", "json"], cwd, home, {
+      APOLO_PLAN_DISABLE_CLAUDE: "1"
+    });
+
+    expect(run.code).toBe(0);
+    const parsed = JSON.parse(run.stdout);
+    expect(parsed.task).toBe("Review CLI UX");
+    expect(parsed.dryRun).toBe(true);
+    expect(parsed.planner).toBe("deterministic-fallback");
+    expect(parsed.artifactPath).toContain(join(cwd, ".apolo", "plans"));
+    expect(parsed.plan.agentAllocation.length).toBeLessThanOrEqual(5);
+    await expect(readFile(parsed.artifactPath, "utf8")).rejects.toThrow();
+  });
+
+  it("rejects plan without --task", async () => {
+    const run = await runCli(["plan", "--dry-run"]);
+
+    expect(run.code).toBe(2);
+    expect(run.stderr).toContain("apolo plan requires --task");
   });
 });
 
