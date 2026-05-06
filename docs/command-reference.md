@@ -45,7 +45,7 @@ apolo doctor
 Recommended checks:
 
 - Node.js version supports the package
-- Python is available when Python-backed integrations are enabled
+- Python is available only when verifying a Python target repository or an explicitly enabled future plugin
 - Ollama is reachable when local Qwen workflows are enabled
 - workspace config is valid
 - agent count is 5 or fewer
@@ -73,16 +73,18 @@ Expected behavior:
 Runs an approved plan.
 
 ```bash
-apolo run --plan .apolo/plans/latest.json
+apolo run --from-plan .apolo/plans/latest.json --approve
 ```
 
 Expected behavior:
 
-- reject unapproved plans
-- enforce max 5 agents
-- stream execution status
-- capture logs and artifacts under `.apolo/runs/`
-- require fresh approval before side effects
+- load JSON or markdown plan artifacts
+- reject plans without explicit approval or approval prompting
+- enforce max 5 agents and security gates before side effects
+- capture a JSONL ledger and checkpoint under `.apolo/runs/<run-id>/`
+- execute through dry-run, fake-agent, or command-spec adapter seams
+- run verification, record memory, and prepare Claude/Codex PR metadata without pushing to main
+- resume terminal checkpoints with `apolo run --resume <run-id>`
 
 ## `apolo sync`
 
@@ -104,13 +106,15 @@ Manages local memory entries.
 
 ```bash
 apolo memory list
-apolo memory add --from .apolo/runs/run-001/summary.json
-apolo memory prune --dry-run
+apolo memory search storage
+apolo memory show <id>
+apolo memory add --title "Decision" --body "Use local JSONL storage" --type decision --tag storage
+apolo memory export --format markdown
 ```
 
 Expected behavior:
 
-- list, add, update, and prune user-approved memory
+- list, search, show, add, and export user-approved memory
 - preserve source metadata and timestamps
 - avoid storing secrets or private credentials
 - require approval before write operations

@@ -9,7 +9,7 @@ Workstream 08 provides the test surface that implementation PRs can plug into wi
 | TypeScript validation | `npm run typecheck` | Validate JavaScript/TypeScript syntax and project config. |
 | Package contract | `npm run package:check` | Validate npm metadata and pack contents. |
 | Node integration | `npm test` | Validate docs, command references, package contract, and fixture shape. |
-| Python fixtures | `npm run test:python` | Validate reusable JSON fixtures and harness helpers. |
+| Python fixtures | `npm run test:python` | Validate source-checkout fixtures and optional Python harness helpers. |
 | Global bin smoke | `npm run smoke:bin` | Pack, install, and execute the global `apolo` bin from a temporary prefix. |
 
 ## CI matrix
@@ -20,13 +20,23 @@ The workflow runs on:
 - macOS latest
 - Ubuntu latest
 - Node.js 20 and 22
-- Python 3.11 and 3.12
+- Node-only APOLO runtime checks; Python may still appear in fixture repositories as a detected target stack.
 
-This catches path, shell, npm shim, and Python compatibility issues early.
+This catches path, shell, npm shim, and package compatibility issues early.
+
+The npm package runtime is TypeScript/Node.js-only. Python matrix jobs validate source fixtures and Python target-repository verification behavior; they do not imply Python is required to install or run `apolo`.
 
 ## Fixture contract
 
 Fixtures under `test/fixtures/` model a generic minimal workspace.
+
+E2E fixtures under `test/fixtures/e2e/` cover:
+
+- a Node repository with `lint`, `typecheck`, `build`, and `test` npm scripts
+- a Python target repository used only for target verification behavior
+- a repository with no tests
+- a repository with a simulated dummy secret marker
+- fake agent binaries for PATH-based CLI smoke scenarios
 
 Required policies:
 
@@ -39,19 +49,13 @@ Required policies:
 
 ## Plugging in a real CLI
 
-Future PRs can set `APOLO_BIN` to run command-level integration tests against a built CLI:
-
-```bash
-APOLO_BIN=/absolute/path/to/apolo python -m unittest discover -s test/harness -p "test_*.py"
-```
-
-Harness helpers copy fixtures to a temporary workspace, run commands with isolated environment variables, and capture stdout, stderr, and exit code.
+Future PRs can set `APOLO_BIN` to run command-level integration tests against a built CLI. Harness helpers copy fixtures to a temporary workspace, run commands with isolated environment variables, and capture stdout, stderr, and exit code.
 
 ## Smoke scenarios to add as features land
 
 1. `apolo init --dry-run` prints the workspace files it would create.
 2. `apolo init` creates `.apolo/` after approval.
-3. `apolo doctor --format json` validates package, model, Python, config, and approval policy.
+3. `apolo doctor --format json` validates package, model, config, and approval policy.
 4. `apolo plan --task ... --dry-run` returns a plan preview without side effects.
 5. `apolo run --plan ... --dry-run` rejects unapproved plans.
 6. `apolo agents add ... --dry-run` enforces the max 5 agent limit.

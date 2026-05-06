@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "apolo.agent_capability",
+  "id": "claude-code",
+  "displayName": "Claude Code",
+  "provider": "claude",
+  "adapterType": "coordinator",
+  "detection": {
+    "state": "available",
+    "executable": "claude"
+  },
+  "taskKinds": [
+    "simple",
+    "bug",
+    "feature",
+    "security",
+    "performance"
+  ],
+  "capabilities": {
+    "canCoordinate": true,
+    "canOpenPr": true,
+    "canWriteExternalSystems": false,
+    "localExecution": true
+  },
+  "limits": {
+    "maxAgentsPerTask": 5
+  }
+}

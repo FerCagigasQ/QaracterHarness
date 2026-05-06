@@ -36,7 +36,7 @@ Expected categories:
 - package/bin
 - workspace config
 - local model availability
-- Python availability when enabled
+- Python availability only for Python target verification or optional plugins
 - approval policy
 - agent limit
 

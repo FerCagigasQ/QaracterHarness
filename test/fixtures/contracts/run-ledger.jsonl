@@ -1,0 +1,2 @@
+{"schemaVersion":1,"kind":"apolo.run_event","runId":"run-fixture-node-1","eventId":"event-001","sequence":1,"eventType":"run.created","timestamp":"2026-05-05T00:00:00.000Z","command":"run","severity":"info","payload":{"planId":"plan-fixture-node-1","mode":"dry-run"}}
+{"schemaVersion":1,"kind":"apolo.run_event","runId":"run-fixture-node-1","eventId":"event-002","sequence":2,"eventType":"approval.required","timestamp":"2026-05-05T00:00:01.000Z","command":"run","severity":"warning","payload":{"approvalRequired":true}}

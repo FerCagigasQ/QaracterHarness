@@ -39,7 +39,7 @@ apolo doctor
 apolo doctor --format json
 ```
 
-Use `doctor` before planning or running tasks. It should report package, workspace, model, Python, approval, and agent-limit readiness.
+Use `doctor` before planning or running tasks. It should report package, workspace, model, approval, and agent-limit readiness. Python checks are only relevant when verifying a Python target repository or an explicitly enabled optional plugin.
 
 ## Plan
 

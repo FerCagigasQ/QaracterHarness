@@ -1,6 +1,6 @@
 import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { ApoloError } from "../cli/errors.js";
+import { ApoloError } from "../core/errors.js";
 import { CONFIG_FILE_NAME, MANIFEST_FILE_NAME } from "../config/manifest.js";
 
 export interface Env {
@@ -11,6 +11,7 @@ export interface ApoloPaths {
   readonly globalHome: string;
   readonly globalMemoryDb: string;
   readonly repoHome: string;
+  readonly plansDir: string;
   readonly repoMemoryDb: string;
   readonly manifestPath: string;
   readonly configPath: string;
@@ -21,6 +22,8 @@ export function resolveHome(env: Env): string {
 
   if (!home) {
     throw new ApoloError("Unable to resolve a home directory.", {
+      code: "CONFIG_INVALID",
+      exitCode: 78,
       hint: "Set HOME or APOLO_HOME before running apolo."
     });
   }
@@ -34,9 +37,10 @@ export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
 
   return {
     globalHome,
-    globalMemoryDb: join(globalHome, "memory", "global.sqlite"),
+    globalMemoryDb: join(globalHome, "memory", "global.jsonl"),
     repoHome,
-    repoMemoryDb: join(repoHome, "memory", "repo.sqlite"),
+    plansDir: join(repoHome, "plans"),
+    repoMemoryDb: join(repoHome, "memory", "repo.jsonl"),
     manifestPath: join(repoHome, MANIFEST_FILE_NAME),
     configPath: join(cwd, CONFIG_FILE_NAME)
   };
@@ -45,6 +49,7 @@ export function resolveApoloPaths(cwd: string, env: Env): ApoloPaths {
 export async function ensureRepoLayout(paths: ApoloPaths): Promise<void> {
   await mkdir(join(paths.globalHome, "memory"), { recursive: true });
   await mkdir(join(paths.repoHome, "memory"), { recursive: true });
+  await mkdir(paths.plansDir, { recursive: true });
 }
 
 export async function fileExists(path: string): Promise<boolean> {

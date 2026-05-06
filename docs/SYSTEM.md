@@ -71,7 +71,7 @@ Default workspace state lives under `.apolo/`.
 APOLO treats verification as a first-class step. The verification subsystem detects common commands from the repository:
 
 - Node: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test`
-- Python: `python -m unittest discover`
+- Python target repositories: `python -m ruff check .`, `python -m mypy .`, `python -m pytest`, or `python -m unittest discover`
 - Make: `make lint`, `make typecheck`, `make build`, `make test`
 
 Verification results are structured. A failed command should be reported as evidence, not hidden behind a successful-looking summary.
@@ -105,11 +105,11 @@ Each run follows a lifecycle:
 
 The run ledger records lifecycle events so execution can be audited later.
 
-## TypeScript and Python split
+## TypeScript/Node.js runtime
 
-APOLO uses TypeScript for the public CLI and Python for several implementation subsystems.
+APOLO 1.0 uses TypeScript/Node.js for the installed runtime. The npm package exposes the global `apolo` binary, command routing, config loading, filesystem layout helpers, manifest defaults, and package validation without requiring Python.
 
-### TypeScript owns
+### TypeScript/Node.js owns
 
 - global npm binary
 - CLI entrypoint
@@ -118,6 +118,10 @@ APOLO uses TypeScript for the public CLI and Python for several implementation s
 - config loading
 - filesystem layout helpers
 - manifest defaults
+- command service boundaries
+- structured errors and JSON/text output
+- timeout and cancellation helpers
+- reusable command result contracts
 - package validation
 
 Key paths:
@@ -129,16 +133,13 @@ src/config/
 src/fs/
 ```
 
-### Python owns
+### Optional Python code
 
-- repository scanning
-- harness generation
-- agent adapter definitions
-- security gate engine
-- SQLite memory store
-- run orchestration seams
-- verification command detection
-- Git/PR metadata helpers
+Python in this repository is not an npm runtime dependency. It is retained for:
+
+- source-checkout fixture and policy tests
+- Python target-repository verification
+- future plugin or worker boundaries that can be invoked explicitly
 
 Key paths:
 
@@ -152,7 +153,7 @@ src/verification/
 src/git/
 ```
 
-The boundary should stay explicit: Python helpers should receive structured input and return structured output. The TypeScript layer should remain the stable user interface.
+The boundary must stay explicit: optional Python helpers should receive structured input and return structured output, and the TypeScript layer remains the stable user interface.
 
 ## Workspace and global layout
 
@@ -190,7 +191,7 @@ Set `APOLO_HOME` to override the global location, especially in tests or isolate
 
 ## Memory system
 
-The memory subsystem is local-first and SQLite-backed.
+The memory subsystem is local-first and JSONL-backed through a narrow storage abstraction.
 
 Default namespaces:
 

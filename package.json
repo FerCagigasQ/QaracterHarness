@@ -8,17 +8,21 @@
   },
   "files": [
     "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "docs/",
+    "examples/",
     "package.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "ci": "npm run lint && npm run typecheck && npm test && npm run build && npm run package:check && npm run test:integration && npm run test:python && npm run smoke:bin",
+    "ci": "npm run lint && npm run typecheck && npm test && npm run build && npm run package:check && npm run test:integration && npm run smoke:bin",
     "lint": "tsc -p tsconfig.json --noEmit",
     "package:check": "npm run build && node packaging/validate-npm-package.mjs",
     "smoke:bin": "npm run build && node packaging/smoke-bin.mjs",
-    "test": "vitest run tests/cli.test.ts",
+    "test": "vitest run tests/cli.test.ts tests/memory-cli.test.ts tests/security-gates.test.ts tests/verification-commands.test.ts",
     "test:integration": "node --test test/integration/*.test.mjs",
-    "test:python": "python -m unittest discover -s test/harness -p \"test_*.py\"",
+    "test:python": "node packaging/test-python-compat.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "engines": {

@@ -2,12 +2,14 @@
 
 This workstream provides the local adapter and routing layer for the APOLO CLI MVP. It is intentionally safe-by-default: command construction returns dry-run command specs, and real subprocess execution requires explicit opt-in.
 
+For APOLO-CLI 1.0, visible agent metadata must conform to the TypeScript-owned `apolo.agent_capability` schema in `src/contracts/schemas.ts`. Adapter implementations are replaceable behind that schema.
+
 ## Supported adapters
 
 | Adapter ID | Local executable detection | Default dry-run command shape | Main capabilities |
 | --- | --- | --- | --- |
-| `claude-code` | `claude` | `claude --print <prompt>` | Default coordinator, simple, bug, feature, security, performance, PR writes, Atlassian writes |
-| `codex-cli` | `codex` | `codex exec <prompt>` | Simple, bug, feature, security, performance, PR writes, Atlassian writes |
+| `claude-code` | `claude` | `claude --print <prompt>` | Default coordinator, simple, bug, feature, security, performance, PR writes |
+| `codex-cli` | `codex` | `codex exec <prompt>` | Simple, bug, feature, security, performance, PR writes |
 | `github-copilot-cli` | `gh` | `gh copilot suggest <prompt>` | Simple, bug, feature, performance |
 | `opencode` | `opencode` | `opencode run <prompt>` | Simple, bug, feature, security, performance |
 | `gemini-cli` | `gemini` | `gemini --prompt <prompt>` | Simple, feature, security, performance |
@@ -24,6 +26,6 @@ Adapters expose `build_command(..., dry_run=True)` and return `CommandSpec` valu
 
 ## Routing model
 
-`src.routing.router.route_task()` classifies prompts as `simple`, `bug`, `feature`, `security`, or `performance`, then selects locally detected adapters that support the task kind. Claude Code is the default coordinator when available. If PR writes or Atlassian writes are requested, routing filters execution to Claude Code and Codex CLI only.
+`src.routing.router.route_task()` classifies prompts as `simple`, `bug`, `feature`, `security`, or `performance`, then selects locally detected adapters that support the task kind. Claude Code is the default coordinator when available. If PR writes are requested, routing filters execution to Claude Code and Codex CLI only.
 
 The router enforces a hard maximum of five agents per decision. Requests above that cap or heuristic selections that exceed the caller's configured cap raise `RoutingError` instead of silently over-routing.

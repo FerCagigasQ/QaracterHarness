@@ -12,7 +12,7 @@ Minimum:
 
 Recommended:
 
-- Python 3.11+
+- Python 3.11+ only for Python target-repository verification, source-checkout fixture tests, or future optional plugins
 - Ollama for local Qwen workflows
 - at least one supported coding-agent CLI installed locally
 
@@ -50,6 +50,8 @@ ollama list
 ```
 
 APOLO defaults to Qwen through Ollama for local fallback and local analysis workflows.
+
+The installed APOLO 1.0 runtime is TypeScript/Node.js-only. Installing and running `apolo` from npm does not require Python.
 
 ## First-time global workflow
 
@@ -256,7 +258,7 @@ Use it when:
 
 Memory principles:
 
-- SQLite local storage
+- JSONL local storage
 - global and repository namespaces
 - source metadata preserved
 - sensitive content blocked or redacted

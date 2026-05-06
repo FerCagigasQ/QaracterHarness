@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { fileExists, resolveApoloPaths, type Env } from "../fs/layout.js";
+import { ApoloError } from "../core/errors.js";
 import { createDefaultManifest } from "./defaults.js";
 import type { ApoloConfig, ApoloManifest } from "./manifest.js";
 
@@ -23,7 +24,10 @@ function parseJsonObject(content: string, source: string): Record<string, unknow
   const parsed: unknown = JSON.parse(content);
 
   if (!isRecord(parsed)) {
-    throw new Error(`${source} must contain a JSON object.`);
+    throw new ApoloError(`${source} must contain a JSON object.`, {
+      code: "CONFIG_INVALID",
+      exitCode: 78
+    });
   }
 
   return parsed;

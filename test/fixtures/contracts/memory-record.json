@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "apolo.memory_record",
+  "id": "mem-fixture-node-1",
+  "namespace": "repository",
+  "type": "decision",
+  "title": "Use Node as the mandatory product runtime",
+  "body": "APOLO-CLI 1.0 must install and run through npm on Node.js. Optional helper runtimes are treated as legacy or adapter-specific details behind stable JSON contracts.",
+  "tags": [
+    "runtime",
+    "contract"
+  ],
+  "source": {
+    "command": "memory",
+    "artifact": "plan-fixture-node-1"
+  },
+  "createdAt": "2026-05-05T00:00:00.000Z",
+  "updatedAt": "2026-05-05T00:00:00.000Z",
+  "sensitivity": {
+    "containsSensitiveData": false,
+    "redacted": false
+  },
+  "retention": {
+    "policy": "durable",
+    "expiresAt": null
+  }
+}

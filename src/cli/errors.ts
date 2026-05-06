@@ -1,16 +1,2 @@
-export interface ApoloErrorOptions {
-  readonly exitCode?: number;
-  readonly hint?: string;
-}
-
-export class ApoloError extends Error {
-  readonly exitCode: number;
-  readonly hint: string | undefined;
-
-  constructor(message: string, options: ApoloErrorOptions = {}) {
-    super(message);
-    this.name = "ApoloError";
-    this.exitCode = options.exitCode ?? 1;
-    this.hint = options.hint;
-  }
-}
+export { ApoloError, notImplemented, toStructuredError } from "../core/errors.js";
+export type { ApoloErrorCode, ApoloErrorOptions, StructuredApoloError } from "../core/errors.js";

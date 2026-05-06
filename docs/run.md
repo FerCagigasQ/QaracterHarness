@@ -1,10 +1,15 @@
 # APOLO-CLI run workflow
 
 Workstream 07 owns the run executor, verification, and PR workflow seams.
+The TypeScript CLI entrypoint implements the focused end-to-end path:
+
+```bash
+apolo run --from-plan .apolo/plans/latest.json --approve
+```
 
 ## Goals
 
-- Execute only approved plans.
+- Execute only approved or explicitly approval-prompted plans.
 - Require human approval before any non-dry-run execution.
 - Route approved plan work to 1-5 logical agents.
 - Delegate work through execution interfaces instead of provider-specific code.
@@ -15,50 +20,53 @@ Workstream 07 owns the run executor, verification, and PR workflow seams.
 
 ## State machine
 
-1. `run.created`
+Final user-visible states are `approval_required`, `running`, `failed`, `verification_failed`, `completed`, and `needs_review`.
+
+1. `run.created` or `run.resumed`
 2. `plan.loaded`
 3. `security.checked`
 4. `agents.routed`
-5. `approval.requested`
-6. `git.branch.prepared`
-7. `execution.skipped` for dry runs or `execution.completed` for approved execution
-8. `verification.completed`
-9. `memory.updated`
-10. `pr.prepared`
-11. `run.completed`
+5. `execution.started`
+6. `execution.completed`
+7. `verification.completed`
+8. `memory.updated`
+9. `pr.prepared`
+10. `run.finished`
 
-If approval is pending or rejected, the run pauses before branch preparation and execution. If an exception is raised, the ledger records `run.failed`.
+If approval is missing or a security gate blocks the plan, the run pauses before execution side effects. Each run writes `.apolo/runs/<run-id>/ledger.jsonl` plus `checkpoint.json`; terminal checkpoints can be resumed with `apolo run --resume <run-id>`.
 
 ## Interfaces
 
-`src/run/interfaces.py` defines integration seams for:
+The TypeScript implementation keeps small adapter seams for:
 
 - plan loading
 - security policy
-- approval gateway
 - logical agent routing
 - execution delegation
 - verification runner
 - memory store
 - git/PR workflow
-- init hooks
-
-These are intentionally small so other workstreams can bind their implementations without changing the run executor.
 
 ## Dry-run behavior
 
-Dry-run mode still loads the approved plan, checks policy, routes logical agents, asks for approval, prepares branch metadata after approval, emits skipped execution results, runs verification, records memory, and prepares a PR draft.
+Dry-run mode still loads the approved plan, checks policy, routes logical agents, emits skipped execution results, runs verification, records memory, and prepares a PR metadata artifact.
+
+Tests can pass `--fake-agent` to exercise orchestration without invoking real agent commands. Real execution uses per-step command specs through the command adapter seam.
 
 ## Verification
 
-`src/verification/commands.py` detects common local checks:
+`src/verification/commands.ts` detects common local checks for the target repository:
 
-- Python: `python -m unittest discover` when Python project/test files exist.
+- Python target repositories: `python -m unittest discover` when Python project/test files exist.
 - Node: `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run test` when present in `package.json`.
+- Python target repos: `python -m ruff check .`, `python -m mypy .`, `python -m pytest`, or `python -m unittest discover -s tests` when project markers request them. Python is detected as a target repo stack, not required for the APOLO npm runtime.
 - Make: `make lint`, `make typecheck`, `make build`, and `make test` when targets are present.
+- Safe fallback: a no-op structured success when no known stack is detected.
 
-The command runner returns structured results and does not terminate orchestration on the first failing check.
+The command runner applies per-command timeouts, redacts output, returns structured results, and does not terminate orchestration on the first failing check.
+
+These Python checks are target-repository verification commands, not an APOLO npm runtime dependency.
 
 ## PR workflow
 
-`src/git/pr.py` creates PR draft content and restricts provider values to `claude` or `codex`. The draft includes summary, verification, and approval sections. Actual PR submission is left to provider adapters.
+`src/run/git.ts` creates PR metadata and restricts provider values to `claude` or `codex`. The metadata includes summary, execution, verification, diff, approval, branch, and no-direct-main-push policy fields. Actual PR submission is left to provider adapters.
